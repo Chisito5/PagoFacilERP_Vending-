@@ -9,9 +9,9 @@ class EmpresaService
     public function Listar()
     {
         return DB::connection('mysqlNegocio')
-            ->table('empresa')
+            ->table('EMPRESA')
             ->select([
-                'IdEmpresa',
+                'Empresa',
                 'CodigoEmpresa',
                 'RazonSocial',
                 'NombreComercial',
@@ -19,14 +19,14 @@ class EmpresaService
                 'Telefono',
                 'Correo',
                 'DireccionFiscal',
-                'IdTipoEmpresa',
-                'IdEstado',
-                'IdPlantillaVisualPredeterminada',
+                'TipoEmpresa',
+                'Estado',
+                'PlantillaVisualPredeterminada',
                 'Usr',
                 'UsrFecha',
                 'UsrHora',
             ])
-            ->orderBy('IdEmpresa', 'desc')
+            ->orderBy('Empresa', 'desc')
             ->limit(50)
             ->get();
     }
@@ -41,25 +41,24 @@ class EmpresaService
             'Telefono' => $datos['Telefono'] ?? null,
             'Correo' => $datos['Correo'] ?? null,
             'DireccionFiscal' => $datos['DireccionFiscal'] ?? null,
-            'IdTipoEmpresa' => (int)$datos['IdTipoEmpresa'],
-            'IdEstado' => (int)$datos['IdEstado'],
 
-            // Si existe en tu tabla, lo dejamos con null si no viene
-            'IdPlantillaVisualPredeterminada' => $datos['IdPlantillaVisualPredeterminada'] ?? null,
+            'TipoEmpresa' => (int)$datos['TipoEmpresa'],
+            'Estado' => (int)$datos['Estado'],
+            'PlantillaVisualPredeterminada' => $datos['PlantillaVisualPredeterminada'] ?? null,
 
             // Auditoría
-            'Usr' => $datos['Usr'],
+            'Usr' => (int)($datos['Usr'] ?? 0),
             'UsrFecha' => date('Y-m-d'),
             'UsrHora' => date('H:i:s'),
         ];
 
-        $id = DB::connection('mysqlNegocio')
-            ->table('empresa')
+        $empresa = DB::connection('mysqlNegocio')
+            ->table('EMPRESA')
             ->insertGetId($insert);
 
         return DB::connection('mysqlNegocio')
-            ->table('empresa')
-            ->where('IdEmpresa', $id)
+            ->table('EMPRESA')
+            ->where('Empresa', $empresa)
             ->first();
     }
 }

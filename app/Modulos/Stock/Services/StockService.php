@@ -8,40 +8,39 @@ class StockService
 {
     public function StockPorMaquina(int $IdMaquina): array
     {
-        // Nota: todo en minúscula en MySQL (tablas), pero columnas están como en tu BD.
-        // Usamos LEFT JOIN para que te liste celdas incluso si aún no tienen existencia.
         $rows = DB::connection('mysqlNegocio')
-            ->table('celda as c')
-            ->leftJoin('existenciacelda as ec', 'ec.IdCelda', '=', 'c.IdCelda')
-            ->leftJoin('productoempresa as pe', 'pe.IdProductoEmpresa', '=', 'ec.IdProductoEmpresa')
-            ->leftJoin('producto as p', 'p.IdProducto', '=', 'pe.IdProducto')
-            ->leftJoin('lote as l', 'l.IdLote', '=', 'ec.IdLote')
+            ->table('CELDA as c')
+            ->leftJoin('EXISTENCIACELDA as ec', 'ec.Celda', '=', 'c.Celda')
+            ->leftJoin('PRODUCTOEMPRESA as pe', 'pe.ProductoEmpresa', '=', 'ec.ProductoEmpresa')
+            ->leftJoin('PRODUCTO as p', 'p.Producto', '=', 'pe.Producto')
+            ->leftJoin('LOTE as l', 'l.Lote', '=', 'ec.Lote')
             ->select([
-                'c.IdCelda',
-                'c.IdMaquina',
+                'c.Celda',
+                'c.Maquina',
                 'c.CodigoSeleccion',
                 'c.Fila',
                 'c.Columna',
                 'c.CapacidadMaxima',
+                'c.Estado as EstadoCelda',
 
-                'ec.IdExistenciaCelda',
+                'ec.ExistenciaCelda',
                 'ec.CantidadDisponible',
                 'ec.CantidadReservada',
-                'ec.IdEstado as IdEstadoExistencia',
+                'ec.Estado as EstadoExistencia',
 
-                'pe.IdProductoEmpresa',
-                'pe.IdEmpresa',
-                'pe.IdProducto',
+                'pe.ProductoEmpresa',
+                'pe.Empresa as EmpresaProducto',
+                'pe.Producto as ProductoId',
 
                 'p.CodigoSku',
                 'p.CodigoBarra',
                 'p.NombreProducto',
 
-                'l.IdLote',
+                'l.Lote',
                 'l.CodigoLote',
                 'l.FechaVencimiento',
             ])
-            ->where('c.IdMaquina', $IdMaquina)
+            ->where('c.Maquina', $IdMaquina)
             ->orderBy('c.Fila')
             ->orderBy('c.Columna')
             ->get();

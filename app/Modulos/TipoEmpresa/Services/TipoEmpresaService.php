@@ -9,17 +9,17 @@ class TipoEmpresaService
     public function Listar()
     {
         return DB::connection('mysqlNegocio')
-            ->table('tipoempresa')
+            ->table('TIPOEMPRESA')
             ->select([
-                'IdTipoEmpresa',
+                'TipoEmpresa',
                 'NombreTipoEmpresa',
                 'Descripcion',
-                'IdEstado',
+                'Estado',
                 'Usr',
                 'UsrFecha',
                 'UsrHora',
             ])
-            ->orderBy('IdTipoEmpresa', 'asc')
+            ->orderBy('TipoEmpresa', 'asc')
             ->get();
     }
 }

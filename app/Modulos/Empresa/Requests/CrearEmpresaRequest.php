@@ -14,19 +14,21 @@ class CrearEmpresaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'CodigoEmpresa' => ['required', 'string', 'max:50'],
-            'RazonSocial' => ['required', 'string', 'max:255'],
-            'NombreComercial' => ['nullable', 'string', 'max:255'],
-            'Nit' => ['nullable', 'string', 'max:50'],
-            'Telefono' => ['nullable', 'string', 'max:50'],
-            'Correo' => ['nullable', 'email', 'max:150'],
+            'CodigoEmpresa' => ['required', 'string', 'max:30'],
+            'RazonSocial' => ['required', 'string', 'max:150'],
+            'NombreComercial' => ['nullable', 'string', 'max:150'],
+            'Nit' => ['nullable', 'string', 'max:30'],
+            'Telefono' => ['nullable', 'string', 'max:30'],
+            'Correo' => ['nullable', 'email', 'max:120'],
             'DireccionFiscal' => ['nullable', 'string', 'max:255'],
 
-            'IdTipoEmpresa' => ['required', 'integer'],
-            'IdEstado' => ['required', 'integer'],
+            'TipoEmpresa' => ['required', 'integer'],
+            'Estado' => ['required', 'integer'],
 
-            // Auditoría PagoFacil
-            'Usr' => ['required', 'string', 'max:50'],
+            'PlantillaVisualPredeterminada' => ['nullable', 'integer'],
+
+            // Auditoría
+            'Usr' => ['nullable', 'integer'],
         ];
     }
 }

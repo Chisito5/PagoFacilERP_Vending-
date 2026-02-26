@@ -9,9 +9,9 @@ class EstadoService
     public function Listar(?string $entidad = null)
     {
         $query = DB::connection('mysqlNegocio')
-            ->table('estado')
+            ->table('ESTADO')
             ->select([
-                'IdEstado',
+                'Estado',
                 'Entidad',
                 'CodigoEstado',
                 'NombreEstado',
@@ -22,7 +22,7 @@ class EstadoService
                 'UsrHora',
             ])
             ->orderBy('Orden', 'asc')
-            ->orderBy('IdEstado', 'asc');
+            ->orderBy('Estado', 'asc');
 
         if ($entidad !== null && $entidad !== '') {
             $query->where('Entidad', $entidad);
