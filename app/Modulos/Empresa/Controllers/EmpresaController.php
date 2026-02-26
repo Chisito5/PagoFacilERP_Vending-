@@ -4,6 +4,7 @@ namespace App\Modulos\Empresa\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use App\Modulos\Empresa\Services\EmpresaService;
+use App\Modulos\Empresa\Requests\CrearEmpresaRequest;
 
 class EmpresaController
 {
@@ -22,6 +23,16 @@ class EmpresaController
             'Ok' => true,
             'Mensaje' => 'Listado de empresas',
             'Datos' => $empresas,
+        ]);
+    }
+    public function Crear(CrearEmpresaRequest $request): JsonResponse
+    {
+        $empresa = $this->empresaService->Crear($request->validated());
+
+        return response()->json([
+            'Ok' => true,
+            'Mensaje' => 'Empresa creada correctamente',
+            'Datos' => $empresa,
         ]);
     }
 }
