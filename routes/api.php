@@ -1,14 +1,6 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Modulos\Empresa\Controllers\EmpresaController;
-use App\Modulos\Estado\Controllers\EstadoController;
-use App\Modulos\TipoEmpresa\Controllers\TipoEmpresaController;
-
-Route::prefix('empresa')->group(function () {
-    Route::get('/', [EmpresaController::class, 'Listar']);
-    Route::post('/', [EmpresaController::class, 'Crear']);
-});
-
-Route::get('/estado', [EstadoController::class, 'Listar']);
-Route::get('/tipoempresa', [TipoEmpresaController::class, 'Listar']);
+require __DIR__ . '/api/empresa.php';
+require __DIR__ . '/api/estado.php';
+require __DIR__ . '/api/tipoempresa.php';
+require __DIR__ . '/api/maquina.php';
