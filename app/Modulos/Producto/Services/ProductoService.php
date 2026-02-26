@@ -4,13 +4,29 @@ namespace App\Modulos\Producto\Services;
 
 use Illuminate\Support\Facades\DB;
 
+/**
+ *
+ * Servicio que gestiona la consulta de Productos.
+ *
+ * @category     PagoFacil
+ * @package      Producto
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class ProductoService
 {
-    private string $conn = 'mysqlNegocio';
-
-    public function Listar(?int $empresa = null)
+    /**
+     * Lista productos (opcionalmente filtrando por Empresa).
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       int|null $tnEmpresa
+     * @return      mixed
+     */
+    public function Listar(?int $tnEmpresa = null)
     {
-        $q = DB::connection($this->conn)
+        $loConsulta = DB::connection('mysqlNegocio')
             ->table('PRODUCTO')
             ->select([
                 'Producto',
@@ -28,12 +44,13 @@ class ProductoService
                 'Usr',
                 'UsrFecha',
                 'UsrHora',
-            ]);
+            ])
+            ->orderBy('Producto', 'asc');
 
-        if (!is_null($empresa)) {
-            $q->where('Empresa', $empresa);
+        if (!is_null($tnEmpresa)) {
+            $loConsulta->where('Empresa', $tnEmpresa);
         }
 
-        return $q->orderBy('Producto', 'desc')->get();
+        return $loConsulta->get();
     }
 }

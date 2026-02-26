@@ -4,8 +4,25 @@ namespace App\Modulos\Empresa\Services;
 
 use Illuminate\Support\Facades\DB;
 
+/**
+ *
+ * Servicio que gestiona la lógica de negocio de Empresa.
+ *
+ * @category     PagoFacil
+ * @package      Empresa
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class EmpresaService
 {
+    /**
+     * Lista empresas.
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @return      mixed
+     */
     public function Listar()
     {
         return DB::connection('mysqlNegocio')
@@ -31,34 +48,43 @@ class EmpresaService
             ->get();
     }
 
-    public function Crear(array $datos)
+    /**
+     * Crea una empresa.
+     *
+     * @method      Crear()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       array $taDatos
+     * @return      mixed
+     */
+    public function Crear(array $taDatos)
     {
-        $insert = [
-            'CodigoEmpresa' => $datos['CodigoEmpresa'],
-            'RazonSocial' => $datos['RazonSocial'],
-            'NombreComercial' => $datos['NombreComercial'] ?? null,
-            'Nit' => $datos['Nit'] ?? null,
-            'Telefono' => $datos['Telefono'] ?? null,
-            'Correo' => $datos['Correo'] ?? null,
-            'DireccionFiscal' => $datos['DireccionFiscal'] ?? null,
+        $laInsert = [
+            'CodigoEmpresa' => $taDatos['CodigoEmpresa'],
+            'RazonSocial' => $taDatos['RazonSocial'],
+            'NombreComercial' => $taDatos['NombreComercial'] ?? null,
+            'Nit' => $taDatos['Nit'] ?? null,
+            'Telefono' => $taDatos['Telefono'] ?? null,
+            'Correo' => $taDatos['Correo'] ?? null,
+            'DireccionFiscal' => $taDatos['DireccionFiscal'] ?? null,
 
-            'TipoEmpresa' => (int)$datos['TipoEmpresa'],
-            'Estado' => (int)$datos['Estado'],
-            'PlantillaVisualPredeterminada' => $datos['PlantillaVisualPredeterminada'] ?? null,
+            'TipoEmpresa' => (int)$taDatos['TipoEmpresa'],
+            'Estado' => (int)$taDatos['Estado'],
+            'PlantillaVisualPredeterminada' => $taDatos['PlantillaVisualPredeterminada'] ?? null,
 
             // Auditoría
-            'Usr' => (int)($datos['Usr'] ?? 0),
+            'Usr' => (int)($taDatos['Usr'] ?? 0),
             'UsrFecha' => date('Y-m-d'),
             'UsrHora' => date('H:i:s'),
         ];
 
-        $empresa = DB::connection('mysqlNegocio')
+        $lnEmpresa = DB::connection('mysqlNegocio')
             ->table('EMPRESA')
-            ->insertGetId($insert);
+            ->insertGetId($laInsert);
 
         return DB::connection('mysqlNegocio')
             ->table('EMPRESA')
-            ->where('Empresa', $empresa)
+            ->where('Empresa', $lnEmpresa)
             ->first();
     }
 }

@@ -4,11 +4,29 @@ namespace App\Modulos\Estado\Services;
 
 use Illuminate\Support\Facades\DB;
 
+/**
+ *
+ * Servicio que gestiona la consulta de Estados.
+ *
+ * @category     PagoFacil
+ * @package      Estado
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class EstadoService
 {
-    public function Listar(?string $entidad = null)
+    /**
+     * Lista estados (opcionalmente filtrando por Entidad).
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       string|null $tcEntidad
+     * @return      mixed
+     */
+    public function Listar(?string $tcEntidad = null)
     {
-        $query = DB::connection('mysqlNegocio')
+        $loConsulta = DB::connection('mysqlNegocio')
             ->table('ESTADO')
             ->select([
                 'Estado',
@@ -24,10 +42,10 @@ class EstadoService
             ->orderBy('Orden', 'asc')
             ->orderBy('Estado', 'asc');
 
-        if ($entidad !== null && $entidad !== '') {
-            $query->where('Entidad', $entidad);
+        if ($tcEntidad !== null && $tcEntidad !== '') {
+            $loConsulta->where('Entidad', $tcEntidad);
         }
 
-        return $query->get();
+        return $loConsulta->get();
     }
 }
