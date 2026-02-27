@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  *
  * @category     PagoFacil
  * @package      Producto
- * @author       Equipo PagoFacil
+ * @author       Vladimir Meriles Velasquez
  * @fecha        26-02-2026
  */
 class ProductoService
@@ -19,7 +19,7 @@ class ProductoService
      * Lista productos (opcionalmente filtrando por Empresa).
      *
      * @method      Listar()
-     * @author      Equipo PagoFacil
+     * @author      Vladimir Meriles Velasquez
      * @fecha       26-02-2026
      * @param       int|null $tnEmpresa
      * @return      mixed

@@ -3,47 +3,82 @@
 namespace App\Modulos\Venta\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Modulos\Venta\Services\VentaService;
+use Illuminate\Http\Request;
 
-/**
- *
- * Controlador que gestiona el proceso de Venta desde la Máquina.
- *
- * @category     PagoFacil
- * @package      Venta
- * @author       Equipo PagoFacil
- * @fecha        26-02-2026
- */
 class VentaController extends Controller
 {
-    private VentaService $poVentaService;
+    private VentaService $toVentaService;
 
     public function __construct(VentaService $toVentaService)
     {
-        $this->poVentaService = $toVentaService;
+        $this->toVentaService = $toVentaService;
     }
 
     /**
-     * Procesa una venta por (Maquina + CodigoSeleccion).
+     * SYSCOOP
+     * category: Controller
+     * package: App\Modulos\Venta\Controllers
+     * author: Vladimir Meriles velasquez
+     * fecha: 27-02-2026
+     * param: Request $toRequest
+     * return: \Illuminate\Http\JsonResponse
      *
-     * @method      Vender()
-     * @author      Equipo PagoFacil
-     * @fecha       26-02-2026
-     * @param       Request $toRequest
+     * Procesa una venta por (Maquina + CodigoSeleccion).
      */
-    public function Vender(Request $toRequest)
+    public function Crear(Request $toRequest)
     {
-        $laDatos = $toRequest->validate([
-            'Maquina' => ['required', 'integer'],
-            'CodigoSeleccion' => ['required', 'string', 'max:10'],
-            'Cantidad' => ['required', 'integer', 'min:1'],
-        ]);
+        $tnMaquina = (int) $toRequest->input('Maquina');
+        $tcCodigoSeleccion = (string) $toRequest->input('CodigoSeleccion');
+        $tnCantidad = (int) $toRequest->input('Cantidad');
 
-        return $this->poVentaService->Vender(
-            (int)$laDatos['Maquina'],
-            (string)$laDatos['CodigoSeleccion'],
-            (int)$laDatos['Cantidad']
-        );
+        if ($tnMaquina <= 0 || $tcCodigoSeleccion === '' || $tnCantidad <= 0) {
+            return response()->json([
+                'Ok' => false,
+                'Mensaje' => 'Datos inválidos. Requiere: Maquina (int), CodigoSeleccion (string), Cantidad (int > 0)'
+            ], 400);
+        }
+
+        return $this->toVentaService->VenderPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnCantidad);
+    }
+
+    /**
+     * SYSCOOP
+     * category: Controller
+     * package: App\Modulos\Venta\Controllers
+     * author: Vladimir Meriles velasquez
+     * fecha: 27-02-2026
+     * return: \Illuminate\Http\JsonResponse
+     *
+     * Lista todas las ventas (últimas primero).
+     */
+    public function Listar()
+    {
+        return $this->toVentaService->Listar();
+    }
+
+    /**
+     * SYSCOOP
+     * category: Controller
+     * package: App\Modulos\Venta\Controllers
+     * author: Vladimir Meriles velasquez
+     * fecha: 27-02-2026
+     * param: int $tnMaquina
+     * return: \Illuminate\Http\JsonResponse
+     *
+     * Lista ventas filtradas por máquina.
+     */
+    public function ListarPorMaquina(int $Maquina)
+    {
+        $tnMaquina = (int) $Maquina;
+
+        if ($tnMaquina <= 0) {
+            return response()->json([
+                'Ok' => false,
+                'Mensaje' => 'Maquina inválida'
+            ], 400);
+        }
+
+        return $this->toVentaService->ListarPorMaquina($tnMaquina);
     }
 }
