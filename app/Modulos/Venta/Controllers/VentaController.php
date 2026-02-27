@@ -39,17 +39,19 @@ class VentaController extends Controller
      */
     public function Crear(Request $toRequest)
     {
-        $toRequest->validate([
-            'Maquina' => ['required', 'integer', 'min:1'],
-            'CodigoSeleccion' => ['required', 'string', 'max:10'],
-            'Cantidad' => ['required', 'integer', 'min:1'],
-        ]);
+        return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
+            $toRequest->validate([
+                'Maquina' => ['required', 'integer', 'min:1'],
+                'CodigoSeleccion' => ['required', 'string', 'max:10'],
+                'Cantidad' => ['required', 'integer', 'min:1'],
+            ]);
 
-        $tnMaquina = (int)$toRequest->input('Maquina');
-        $tcCodigoSeleccion = (string)$toRequest->input('CodigoSeleccion');
-        $tnCantidad = (int)$toRequest->input('Cantidad');
+            $tnMaquina = (int)$toRequest->input('Maquina');
+            $tcCodigoSeleccion = (string)$toRequest->input('CodigoSeleccion');
+            $tnCantidad = (int)$toRequest->input('Cantidad');
 
-        return $this->loService->VenderPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnCantidad);
+            return $this->loService->VenderPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnCantidad);
+        });
     }
 
     /**
@@ -103,14 +105,16 @@ class VentaController extends Controller
      */
     public function Reversar(Request $toRequest)
     {
-        $toRequest->validate([
-            'Venta' => ['required', 'integer', 'min:1'],
-            'Motivo' => ['required', 'string', 'max:255'],
-        ]);
+        return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
+            $toRequest->validate([
+                'Venta' => ['required', 'integer', 'min:1'],
+                'Motivo' => ['required', 'string', 'max:255'],
+            ]);
 
-        $tnVenta = (int)$toRequest->input('Venta');
-        $tcMotivo = (string)$toRequest->input('Motivo');
+            $tnVenta = (int)$toRequest->input('Venta');
+            $tcMotivo = (string)$toRequest->input('Motivo');
 
-        return $this->loService->Reversar($tnVenta, $tcMotivo);
+            return $this->loService->Reversar($tnVenta, $tcMotivo);
+        });
     }
 }

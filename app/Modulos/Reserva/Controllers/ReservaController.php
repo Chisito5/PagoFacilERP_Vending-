@@ -38,19 +38,21 @@ class ReservaController extends Controller
      */
     public function Reservar(Request $toRequest)
     {
-        $toRequest->validate([
-            'Maquina' => ['required', 'integer', 'min:1'],
-            'CodigoSeleccion' => ['required', 'string', 'max:10'],
-            'Cantidad' => ['required', 'integer', 'min:1'],
-            'ExpiraSegundos' => ['nullable', 'integer', 'min:30', 'max:3600'],
-        ]);
+        return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
+            $toRequest->validate([
+                'Maquina' => ['required', 'integer', 'min:1'],
+                'CodigoSeleccion' => ['required', 'string', 'max:10'],
+                'Cantidad' => ['required', 'integer', 'min:1'],
+                'ExpiraSegundos' => ['nullable', 'integer', 'min:30', 'max:3600'],
+            ]);
 
-        $tnMaquina = (int)$toRequest->input('Maquina');
-        $tcCodigoSeleccion = (string)$toRequest->input('CodigoSeleccion');
-        $tnCantidad = (int)$toRequest->input('Cantidad');
-        $tnExpiraSegundos = (int)($toRequest->input('ExpiraSegundos') ?? 120);
+            $tnMaquina = (int)$toRequest->input('Maquina');
+            $tcCodigoSeleccion = (string)$toRequest->input('CodigoSeleccion');
+            $tnCantidad = (int)$toRequest->input('Cantidad');
+            $tnExpiraSegundos = (int)($toRequest->input('ExpiraSegundos') ?? 120);
 
-        return $this->loService->Reservar($tnMaquina, $tcCodigoSeleccion, $tnCantidad, $tnExpiraSegundos);
+            return $this->loService->Reservar($tnMaquina, $tcCodigoSeleccion, $tnCantidad, $tnExpiraSegundos);
+        });
     }
 
     /**
@@ -67,17 +69,19 @@ class ReservaController extends Controller
      */
     public function Cancelar(Request $toRequest)
     {
-        $toRequest->validate([
-            'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
-            'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
-            'Motivo' => ['nullable', 'string', 'max:255'],
-        ]);
+        return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
+            $toRequest->validate([
+                'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
+                'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
+                'Motivo' => ['nullable', 'string', 'max:255'],
+            ]);
 
-        $tnReserva = $toRequest->filled('Reserva') ? (int)$toRequest->input('Reserva') : 0;
-        $tcReservaExterna = $toRequest->filled('ReservaExterna') ? (string)$toRequest->input('ReservaExterna') : null;
-        $tcMotivo = $toRequest->filled('Motivo') ? (string)$toRequest->input('Motivo') : null;
+            $tnReserva = $toRequest->filled('Reserva') ? (int)$toRequest->input('Reserva') : 0;
+            $tcReservaExterna = $toRequest->filled('ReservaExterna') ? (string)$toRequest->input('ReservaExterna') : null;
+            $tcMotivo = $toRequest->filled('Motivo') ? (string)$toRequest->input('Motivo') : null;
 
-        return $this->loService->Cancelar($tnReserva, $tcReservaExterna, $tcMotivo);
+            return $this->loService->Cancelar($tnReserva, $tcReservaExterna, $tcMotivo);
+        });
     }
 
     /**
@@ -97,14 +101,16 @@ class ReservaController extends Controller
      */
     public function Confirmar(Request $toRequest)
     {
-        $toRequest->validate([
-            'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
-            'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
-        ]);
+        return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
+            $toRequest->validate([
+                'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
+                'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
+            ]);
 
-        $tnReserva = $toRequest->filled('Reserva') ? (int)$toRequest->input('Reserva') : 0;
-        $tcReservaExterna = $toRequest->filled('ReservaExterna') ? (string)$toRequest->input('ReservaExterna') : null;
+            $tnReserva = $toRequest->filled('Reserva') ? (int)$toRequest->input('Reserva') : 0;
+            $tcReservaExterna = $toRequest->filled('ReservaExterna') ? (string)$toRequest->input('ReservaExterna') : null;
 
-        return $this->loService->Confirmar($tnReserva, $tcReservaExterna);
+            return $this->loService->Confirmar($tnReserva, $tcReservaExterna);
+        });
     }
 }
