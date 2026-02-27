@@ -68,8 +68,8 @@ class ReservaController extends Controller
     public function Cancelar(Request $toRequest)
     {
         $toRequest->validate([
-            'Reserva' => ['nullable', 'integer', 'min:1'],
-            'ReservaExterna' => ['nullable', 'string', 'max:80'],
+            'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
+            'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
             'Motivo' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -98,8 +98,8 @@ class ReservaController extends Controller
     public function Confirmar(Request $toRequest)
     {
         $toRequest->validate([
-            'Reserva' => ['nullable', 'integer', 'min:1'],
-            'ReservaExterna' => ['nullable', 'string', 'max:80'],
+            'Reserva' => ['nullable', 'integer', 'min:1', 'required_without:ReservaExterna'],
+            'ReservaExterna' => ['nullable', 'string', 'max:80', 'required_without:Reserva'],
         ]);
 
         $tnReserva = $toRequest->filled('Reserva') ? (int)$toRequest->input('Reserva') : 0;

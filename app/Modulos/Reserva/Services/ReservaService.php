@@ -4,9 +4,16 @@ namespace App\Modulos\Reserva\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use stdClass;
 
 class ReservaService
 {
+    private const ESTADO_ACTIVA = 1;
+    private const ESTADO_CONFIRMADA = 2;
+    private const ESTADO_EXPIRADA = 3;
+    private const ESTADO_CANCELADA = 4;
+    private const ESTADO_VENTA_ACTIVA = 1;
+
     /**
      * SYSCOOP
      * category: Service
@@ -38,7 +45,7 @@ class ReservaService
             if (!$loCelda) {
                 return response()->json([
                     'Ok' => false,
-                    'Mensaje' => 'La celda no existe para esta máquina o está inactiva'
+                    'Mensaje' => 'La celda no existe para esta maquina o esta inactiva'
                 ], 400);
             }
 
@@ -90,7 +97,7 @@ class ReservaService
                     'Maquina' => $tnMaquina,
                     'FechaHoraReserva' => $tdAhora,
                     'ExpiraEn' => $tdExpiraEn,
-                    'Estado' => 1,
+                    'Estado' => self::ESTADO_ACTIVA,
                     'Usr' => 0,
                     'UsrFecha' => $tdAhora->toDateString(),
                     'UsrHora' => $tdAhora->format('H:i:s'),
@@ -118,17 +125,14 @@ class ReservaService
                 if ($lfHas('Reserva')) $laDet['Reserva'] = $tnReserva;
                 if ($lfHas('Celda')) $laDet['Celda'] = $tnCelda;
 
-                // Campo obligatorio en varios esquemas de RESERVADETALLE
                 if ($lfHas('ProductoEmpresa')) {
                     $tnProductoEmpresa = isset($loExistencia->ProductoEmpresa) ? (int)$loExistencia->ProductoEmpresa : 0;
-
                     if ($tnProductoEmpresa <= 0) {
                         return response()->json([
                             'Ok' => false,
                             'Mensaje' => 'No se pudo resolver ProductoEmpresa para la reserva'
                         ], 500);
                     }
-
                     $laDet['ProductoEmpresa'] = $tnProductoEmpresa;
                 }
 
@@ -166,7 +170,7 @@ class ReservaService
                     $laDet['CantidadAgregada'] = $tnCantidad;
                 }
 
-                if ($lfHas('Estado')) $laDet['Estado'] = 1;
+                if ($lfHas('Estado')) $laDet['Estado'] = self::ESTADO_ACTIVA;
                 if ($lfHas('Usr')) $laDet['Usr'] = 0;
                 if ($lfHas('UsrFecha')) $laDet['UsrFecha'] = $tdAhora->toDateString();
                 if ($lfHas('UsrHora')) $laDet['UsrHora'] = $tdAhora->format('H:i:s');
@@ -213,75 +217,68 @@ class ReservaService
     public function Cancelar(int $tnReserva, ?string $tcReservaExterna = null, ?string $tcMotivo = null)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva, $tcReservaExterna, $tcMotivo) {
-
-            $loReserva = DB::connection('mysqlNegocio')
-                ->table('RESERVA')
-                ->when($tnReserva > 0, fn($q) => $q->where('Reserva', $tnReserva))
-                ->when($tnReserva <= 0 && $tcReservaExterna, fn($q) => $q->where('ReservaExterna', $tcReservaExterna))
-                ->lockForUpdate()
-                ->first();
+            $loReserva = $this->obtenerReservaConLock($tnReserva, $tcReservaExterna);
 
             if (!$loReserva) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'Reserva no encontrada'], 404);
             }
 
-            if ((int)$loReserva->Estado !== 1) {
-                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no está activa'], 409);
+            $tnEstado = (int)$loReserva->Estado;
+
+            if ($tnEstado === self::ESTADO_CANCELADA) {
+                return response()->json([
+                    'Ok' => true,
+                    'Mensaje' => 'Reserva ya cancelada',
+                    'Datos' => [
+                        'Reserva' => (int)$loReserva->Reserva,
+                        'ReservaExterna' => (string)$loReserva->ReservaExterna,
+                    ]
+                ]);
             }
 
-            // Tomar detalle
-            $loDet = DB::connection('mysqlNegocio')
-                ->table('RESERVADETALLE')
-                ->where('Reserva', (int)$loReserva->Reserva)
-                ->orderByDesc('ReservaDetalle')
-                ->first();
+            if ($tnEstado === self::ESTADO_EXPIRADA) {
+                return response()->json([
+                    'Ok' => true,
+                    'Mensaje' => 'Reserva ya expirada/liberada',
+                    'Datos' => [
+                        'Reserva' => (int)$loReserva->Reserva,
+                        'ReservaExterna' => (string)$loReserva->ReservaExterna,
+                    ]
+                ]);
+            }
 
+            if ($tnEstado === self::ESTADO_CONFIRMADA) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'No se puede cancelar, la reserva ya esta confirmada'], 409);
+            }
+
+            if ($tnEstado !== self::ESTADO_ACTIVA) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no esta en estado cancelable'], 409);
+            }
+
+            $loDet = $this->obtenerDetalleReserva((int)$loReserva->Reserva);
             if (!$loDet) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No existe detalle para liberar stock'], 500);
             }
 
-            $tnCelda = (int)$loDet->Celda;
-
-            // CantidadReservada (tu tabla real)
-            $tnCantidad = isset($loDet->CantidadReservada) ? (int)$loDet->CantidadReservada
-                : (isset($loDet->Cantidad) ? (int)$loDet->Cantidad : 0);
-
-            if ($tnCantidad <= 0) {
-                return response()->json(['Ok' => false, 'Mensaje' => 'Detalle sin cantidad válida'], 500);
-            }
-
-            $loExistencia = DB::connection('mysqlNegocio')
-                ->table('EXISTENCIACELDA')
-                ->where('Celda', $tnCelda)
-                ->where('Estado', 1)
-                ->lockForUpdate()
-                ->first();
-
+            $loExistencia = $this->obtenerExistenciaConLock((int)$loDet->Celda);
             if (!$loExistencia) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No existe existencia para liberar'], 400);
             }
 
-            $tnDisponible = (int)$loExistencia->CantidadDisponible;
-            $tnReservada = (int)$loExistencia->CantidadReservada;
+            $tnCantidad = (int)$loDet->Cantidad;
+            if ($tnCantidad <= 0) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'Detalle sin cantidad valida'], 500);
+            }
 
-            if ($tnReservada < $tnCantidad) {
+            if (!$this->liberarStockReservado($loExistencia, $tnCantidad)) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'Inconsistencia: reservada menor que lo reservado'], 409);
             }
 
             DB::connection('mysqlNegocio')
-                ->table('EXISTENCIACELDA')
-                ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
-                ->update([
-                    'CantidadDisponible' => $tnDisponible + $tnCantidad,
-                    'CantidadReservada' => $tnReservada - $tnCantidad,
-                ]);
-
-            // Marcar cancelada (ajusta Estado según tu catálogo si aplica)
-            DB::connection('mysqlNegocio')
                 ->table('RESERVA')
                 ->where('Reserva', (int)$loReserva->Reserva)
                 ->update([
-                    'Estado' => 4, // 4 = cancelada (si tu tabla ESTADO maneja ese código)
+                    'Estado' => self::ESTADO_CANCELADA,
                 ]);
 
             return response()->json([
@@ -290,7 +287,7 @@ class ReservaService
                 'Datos' => [
                     'Reserva' => (int)$loReserva->Reserva,
                     'ReservaExterna' => (string)$loReserva->ReservaExterna,
-                    'Celda' => $tnCelda,
+                    'Celda' => (int)$loDet->Celda,
                     'CantidadLiberada' => $tnCantidad,
                     'Motivo' => $tcMotivo
                 ]
@@ -308,70 +305,80 @@ class ReservaService
      * param: ?string $tcReservaExterna
      * return: \Illuminate\Http\JsonResponse
      *
-     * Confirma reserva: baja CantidadReservada (ya estaba descontado del disponible).
-     * (La venta/pago/reembolso se integra después, este paso solo asegura stock).
+     * Confirma reserva: registra venta final y baja CantidadReservada.
      */
     public function Confirmar(int $tnReserva, ?string $tcReservaExterna = null)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva, $tcReservaExterna) {
-
-            $loReserva = DB::connection('mysqlNegocio')
-                ->table('RESERVA')
-                ->when($tnReserva > 0, fn($q) => $q->where('Reserva', $tnReserva))
-                ->when($tnReserva <= 0 && $tcReservaExterna, fn($q) => $q->where('ReservaExterna', $tcReservaExterna))
-                ->lockForUpdate()
-                ->first();
+            $loReserva = $this->obtenerReservaConLock($tnReserva, $tcReservaExterna);
 
             if (!$loReserva) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'Reserva no encontrada'], 404);
             }
 
-            if ((int)$loReserva->Estado !== 1) {
-                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no está activa'], 409);
+            $tnEstado = (int)$loReserva->Estado;
+
+            if ($tnEstado === self::ESTADO_CONFIRMADA) {
+                return response()->json([
+                    'Ok' => true,
+                    'Mensaje' => 'Reserva ya confirmada',
+                    'Datos' => [
+                        'Reserva' => (int)$loReserva->Reserva,
+                        'ReservaExterna' => (string)$loReserva->ReservaExterna,
+                    ]
+                ]);
             }
 
-            // Expirada
-            if (isset($loReserva->ExpiraEn) && now()->gt($loReserva->ExpiraEn)) {
-                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva está expirada'], 409);
+            if ($tnEstado === self::ESTADO_CANCELADA) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'No se puede confirmar, la reserva esta cancelada'], 409);
             }
 
-            $loDet = DB::connection('mysqlNegocio')
-                ->table('RESERVADETALLE')
-                ->where('Reserva', (int)$loReserva->Reserva)
-                ->orderByDesc('ReservaDetalle')
-                ->first();
+            if ($tnEstado === self::ESTADO_EXPIRADA) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'No se puede confirmar, la reserva esta expirada'], 409);
+            }
 
+            if ($tnEstado !== self::ESTADO_ACTIVA) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no esta en estado confirmable'], 409);
+            }
+
+            $loDet = $this->obtenerDetalleReserva((int)$loReserva->Reserva);
             if (!$loDet) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No existe detalle de reserva'], 500);
             }
 
-            $tnCelda = (int)$loDet->Celda;
-
-            $tnCantidad = isset($loDet->CantidadReservada) ? (int)$loDet->CantidadReservada
-                : (isset($loDet->Cantidad) ? (int)$loDet->Cantidad : 0);
-
-            if ($tnCantidad <= 0) {
-                return response()->json(['Ok' => false, 'Mensaje' => 'Detalle sin cantidad válida'], 500);
-            }
-
-            $loExistencia = DB::connection('mysqlNegocio')
-                ->table('EXISTENCIACELDA')
-                ->where('Celda', $tnCelda)
-                ->where('Estado', 1)
-                ->lockForUpdate()
-                ->first();
-
+            $loExistencia = $this->obtenerExistenciaConLock((int)$loDet->Celda);
             if (!$loExistencia) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No existe existencia para confirmar'], 400);
             }
 
-            $tnReservada = (int)$loExistencia->CantidadReservada;
+            $tnCantidad = (int)$loDet->Cantidad;
+            if ($tnCantidad <= 0) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'Detalle sin cantidad valida'], 500);
+            }
 
+            if (isset($loReserva->ExpiraEn) && now()->gt($loReserva->ExpiraEn)) {
+                if (!$this->liberarStockReservado($loExistencia, $tnCantidad)) {
+                    return response()->json(['Ok' => false, 'Mensaje' => 'Inconsistencia al expirar reserva'], 409);
+                }
+
+                DB::connection('mysqlNegocio')
+                    ->table('RESERVA')
+                    ->where('Reserva', (int)$loReserva->Reserva)
+                    ->update(['Estado' => self::ESTADO_EXPIRADA]);
+
+                return response()->json(['Ok' => false, 'Mensaje' => 'La reserva esta expirada, debe crear una nueva'], 409);
+            }
+
+            $tnReservada = (int)$loExistencia->CantidadReservada;
             if ($tnReservada < $tnCantidad) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'Inconsistencia: reservada menor que lo reservado'], 409);
             }
 
-            // Confirmar = consumir la reserva: baja reservada
+            $tdAhora = now();
+            if (!$this->registrarVentaDesdeReserva($loReserva, $loDet, $tdAhora)) {
+                return response()->json(['Ok' => false, 'Mensaje' => 'No se pudo registrar venta para confirmar la reserva'], 500);
+            }
+
             DB::connection('mysqlNegocio')
                 ->table('EXISTENCIACELDA')
                 ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
@@ -383,19 +390,200 @@ class ReservaService
                 ->table('RESERVA')
                 ->where('Reserva', (int)$loReserva->Reserva)
                 ->update([
-                    'Estado' => 2, // 2 = confirmada (ajusta si aplica)
+                    'Estado' => self::ESTADO_CONFIRMADA,
                 ]);
 
             return response()->json([
                 'Ok' => true,
-                'Mensaje' => 'Reserva confirmada (stock asegurado)',
+                'Mensaje' => 'Reserva confirmada y venta registrada',
                 'Datos' => [
                     'Reserva' => (int)$loReserva->Reserva,
                     'ReservaExterna' => (string)$loReserva->ReservaExterna,
-                    'Celda' => $tnCelda,
+                    'Celda' => (int)$loDet->Celda,
                     'CantidadConfirmada' => $tnCantidad
                 ]
             ]);
         });
+    }
+
+    /**
+     * Expira reservas vencidas y libera stock reservado.
+     *
+     * @return array{procesadas:int,expiradas:int,saltadas:int,errores:int}
+     */
+    public function ExpirarVencidas(int $tnLote = 100): array
+    {
+        $laTotales = [
+            'procesadas' => 0,
+            'expiradas' => 0,
+            'saltadas' => 0,
+            'errores' => 0,
+        ];
+
+        $laReservas = DB::connection('mysqlNegocio')
+            ->table('RESERVA')
+            ->where('Estado', self::ESTADO_ACTIVA)
+            ->where('ExpiraEn', '<', now())
+            ->orderBy('Reserva')
+            ->limit($tnLote)
+            ->pluck('Reserva');
+
+        foreach ($laReservas as $tnReserva) {
+            $laTotales['procesadas']++;
+
+            try {
+                $lbExpirada = DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva) {
+                    $loReserva = DB::connection('mysqlNegocio')
+                        ->table('RESERVA')
+                        ->where('Reserva', (int)$tnReserva)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$loReserva) {
+                        return false;
+                    }
+
+                    if ((int)$loReserva->Estado !== self::ESTADO_ACTIVA) {
+                        return false;
+                    }
+
+                    if (!isset($loReserva->ExpiraEn) || !now()->gt($loReserva->ExpiraEn)) {
+                        return false;
+                    }
+
+                    $loDet = $this->obtenerDetalleReserva((int)$loReserva->Reserva);
+                    if (!$loDet) {
+                        return false;
+                    }
+
+                    $loExistencia = $this->obtenerExistenciaConLock((int)$loDet->Celda);
+                    if (!$loExistencia) {
+                        return false;
+                    }
+
+                    $tnCantidad = (int)$loDet->Cantidad;
+                    if ($tnCantidad <= 0) {
+                        return false;
+                    }
+
+                    if (!$this->liberarStockReservado($loExistencia, $tnCantidad)) {
+                        return false;
+                    }
+
+                    DB::connection('mysqlNegocio')
+                        ->table('RESERVA')
+                        ->where('Reserva', (int)$loReserva->Reserva)
+                        ->update(['Estado' => self::ESTADO_EXPIRADA]);
+
+                    return true;
+                });
+
+                if ($lbExpirada) {
+                    $laTotales['expiradas']++;
+                } else {
+                    $laTotales['saltadas']++;
+                }
+            } catch (\Throwable $toEx) {
+                report($toEx);
+                $laTotales['errores']++;
+            }
+        }
+
+        return $laTotales;
+    }
+
+    private function obtenerReservaConLock(int $tnReserva, ?string $tcReservaExterna): ?stdClass
+    {
+        if ($tnReserva <= 0 && (!$tcReservaExterna || trim($tcReservaExterna) === '')) {
+            return null;
+        }
+
+        return DB::connection('mysqlNegocio')
+            ->table('RESERVA')
+            ->when($tnReserva > 0, fn($q) => $q->where('Reserva', $tnReserva))
+            ->when($tnReserva <= 0 && $tcReservaExterna, fn($q) => $q->where('ReservaExterna', $tcReservaExterna))
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function obtenerDetalleReserva(int $tnReserva): ?stdClass
+    {
+        $loDet = DB::connection('mysqlNegocio')
+            ->table('RESERVADETALLE')
+            ->where('Reserva', $tnReserva)
+            ->orderByDesc('ReservaDetalle')
+            ->lockForUpdate()
+            ->first();
+
+        if (!$loDet) {
+            return null;
+        }
+
+        if (!isset($loDet->Cantidad)) {
+            return null;
+        }
+
+        return $loDet;
+    }
+
+    private function obtenerExistenciaConLock(int $tnCelda): ?stdClass
+    {
+        return DB::connection('mysqlNegocio')
+            ->table('EXISTENCIACELDA')
+            ->where('Celda', $tnCelda)
+            ->where('Estado', 1)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function liberarStockReservado(stdClass $loExistencia, int $tnCantidad): bool
+    {
+        $tnReservada = (int)$loExistencia->CantidadReservada;
+        if ($tnReservada < $tnCantidad) {
+            return false;
+        }
+
+        $tnDisponible = (int)$loExistencia->CantidadDisponible;
+
+        DB::connection('mysqlNegocio')
+            ->table('EXISTENCIACELDA')
+            ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
+            ->update([
+                'CantidadDisponible' => $tnDisponible + $tnCantidad,
+                'CantidadReservada' => $tnReservada - $tnCantidad,
+            ]);
+
+        return true;
+    }
+
+    private function registrarVentaDesdeReserva(stdClass $loReserva, stdClass $loDet, $tdAhora): bool
+    {
+        if (
+            !isset($loDet->Celda) ||
+            !isset($loDet->ProductoEmpresa) ||
+            !isset($loDet->Lote) ||
+            !isset($loDet->Cantidad) ||
+            !isset($loDet->PrecioUnitario)
+        ) {
+            return false;
+        }
+
+        DB::connection('mysqlNegocio')
+            ->table('VENTA')
+            ->insert([
+                'Maquina' => (int)$loReserva->Maquina,
+                'Celda' => (int)$loDet->Celda,
+                'ProductoEmpresa' => (int)$loDet->ProductoEmpresa,
+                'Lote' => (int)$loDet->Lote,
+                'Cantidad' => (int)$loDet->Cantidad,
+                'PrecioUnitario' => (float)$loDet->PrecioUnitario,
+                'FechaVenta' => $tdAhora,
+                'Estado' => self::ESTADO_VENTA_ACTIVA,
+                'Usr' => 0,
+                'UsrFecha' => $tdAhora->toDateString(),
+                'UsrHora' => $tdAhora->format('H:i:s'),
+            ]);
+
+        return true;
     }
 }
