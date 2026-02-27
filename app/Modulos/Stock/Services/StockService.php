@@ -15,6 +15,60 @@ use Illuminate\Support\Facades\DB;
  */
 class StockService
 {
+
+
+    /**
+     * SYSCOOP
+     * category: Service
+     * package: App\Modulos\Stock\Services
+     * author: Vladimir Meriles velasquez
+     * fecha: 27-02-2026
+     * param: int $tnMaquina
+     * param: string $tcCodigoSeleccion
+     * return: ?array
+     *
+     * Devuelve stock de una celda por (Maquina + CodigoSeleccion).
+     */
+    public function StockPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion): ?array
+    {
+        $loFila = DB::connection('mysqlNegocio')
+            ->table('CELDA as c')
+            ->leftJoin('EXISTENCIACELDA as ec', 'ec.Celda', '=', 'c.Celda')
+            ->leftJoin('PRODUCTOEMPRESA as pe', 'pe.ProductoEmpresa', '=', 'ec.ProductoEmpresa')
+            ->leftJoin('PRODUCTO as p', 'p.Producto', '=', 'pe.Producto')
+            ->leftJoin('LOTE as l', 'l.Lote', '=', 'ec.Lote')
+            ->select([
+                'c.Celda',
+                'c.Maquina',
+                'c.CodigoSeleccion',
+                'c.Fila',
+                'c.Columna',
+                'c.CapacidadMaxima',
+                'c.Estado as EstadoCelda',
+
+                'ec.ExistenciaCelda',
+                'ec.CantidadDisponible',
+                'ec.CantidadReservada',
+                'ec.Estado as EstadoExistencia',
+
+                'pe.ProductoEmpresa',
+                'pe.Empresa as EmpresaProducto',
+                'pe.Producto as ProductoId',
+
+                'p.CodigoSku',
+                'p.CodigoBarra',
+                'p.NombreProducto',
+
+                'l.Lote',
+                'l.CodigoLote',
+                'l.FechaVencimiento',
+            ])
+            ->where('c.Maquina', $tnMaquina)
+            ->where('c.CodigoSeleccion', $tcCodigoSeleccion)
+            ->first();
+
+        return $loFila ? (array)$loFila : null;
+    }
     /**
      * Devuelve stock por máquina (celdas + producto + existencia).
      *
