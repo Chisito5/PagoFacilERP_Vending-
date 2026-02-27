@@ -17,13 +17,13 @@ class VentaService
      * param: int $tnCantidad
      * return: \Illuminate\Http\JsonResponse
      *
-     * Vende en base a (Maquina + CodigoSeleccion) y descuenta stock.
+     * Vende en base a (Maquina + CodigoSeleccion), descuenta stock y registra la venta.
      */
     public function VenderPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion, int $tnCantidad)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnMaquina, $tcCodigoSeleccion, $tnCantidad) {
 
-            // 1) Buscar celda real (ID) perteneciente a la máquina
+            // 1) Buscar la celda por (Maquina + CodigoSeleccion)
             $loCelda = DB::connection('mysqlNegocio')
                 ->table('CELDA')
                 ->where('Maquina', $tnMaquina)
@@ -38,9 +38,41 @@ class VentaService
                 ], 400);
             }
 
-            $tnCelda = (int) $loCelda->Celda;
+            $tnCelda = (int)$loCelda->Celda;
 
-            // 2) Bloquear existencia
+            // 2) Obtener planograma activo (última versión)
+            $loPlanograma = DB::connection('mysqlNegocio')
+                ->table('PLANOGRAMA')
+                ->where('Maquina', $tnMaquina)
+                ->where('Estado', 1)
+                ->orderByDesc('VersionPlanograma') // recomendado
+                ->first();
+
+            if (!$loPlanograma) {
+                return response()->json([
+                    'Ok' => false,
+                    'Mensaje' => 'No existe planograma activo para la máquina'
+                ], 400);
+            }
+
+            // 3) Obtener precio por celda desde PLANOGRAMACELDA
+            $loPlanogramaCelda = DB::connection('mysqlNegocio')
+                ->table('PLANOGRAMACELDA')
+                ->where('Planograma', (int)$loPlanograma->Planograma)
+                ->where('Celda', $tnCelda)
+                ->where('Estado', 1)
+                ->first();
+
+            if (!$loPlanogramaCelda) {
+                return response()->json([
+                    'Ok' => false,
+                    'Mensaje' => 'La celda no tiene precio configurado en el planograma'
+                ], 400);
+            }
+
+            $tnPrecioUnitario = (float)$loPlanogramaCelda->PrecioVenta;
+
+            // 4) Bloquear existencia para descontar stock de forma segura
             $loExistencia = DB::connection('mysqlNegocio')
                 ->table('EXISTENCIACELDA')
                 ->where('Celda', $tnCelda)
@@ -62,7 +94,7 @@ class VentaService
                 ], 400);
             }
 
-            // 3) Descontar stock
+            // 5) Descontar stock
             DB::connection('mysqlNegocio')
                 ->table('EXISTENCIACELDA')
                 ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
@@ -70,9 +102,7 @@ class VentaService
                     'CantidadDisponible' => (int)$loExistencia->CantidadDisponible - $tnCantidad
                 ]);
 
-            // 4) Registrar venta (precio fijo por ahora)
-            $tnPrecioUnitario = 10.00;
-
+            // 6) Registrar venta
             DB::connection('mysqlNegocio')
                 ->table('VENTA')
                 ->insert([
