@@ -12,3 +12,5 @@ require __DIR__ . '/api/planogramacelda.php';
 require __DIR__ . '/api/existenciacelda.php';
 require __DIR__ . '/api/stock.php';
 require __DIR__ . '/api/reposicion.php';
+require __DIR__ . '/api/reserva.php';
+require __DIR__ . '/api/venta_reversa.php';
