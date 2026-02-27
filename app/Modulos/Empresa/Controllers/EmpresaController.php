@@ -2,37 +2,67 @@
 
 namespace App\Modulos\Empresa\Controllers;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Modulos\Empresa\Services\EmpresaService;
 use App\Modulos\Empresa\Requests\CrearEmpresaRequest;
 
-class EmpresaController
+/**
+ *
+ * Controlador que gestiona las operaciones de Empresa.
+ *
+ * @category     PagoFacil
+ * @package      Empresa
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
+class EmpresaController extends Controller
 {
-    protected EmpresaService $empresaService;
+    /** @var EmpresaService */
+    protected EmpresaService $poEmpresaService;
 
-    public function __construct(EmpresaService $empresaService)
+    public function __construct(EmpresaService $toEmpresaService)
     {
-        $this->empresaService = $empresaService;
+        $this->poEmpresaService = $toEmpresaService;
     }
 
+    /**
+     * Lista empresas registradas.
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @return      JsonResponse
+     */
     public function Listar(): JsonResponse
     {
-        $empresas = $this->empresaService->Listar();
+        $loEmpresas = $this->poEmpresaService->Listar();
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Listado de empresas',
-            'Datos' => $empresas,
+            'Datos' => $loEmpresas,
         ]);
     }
-    public function Crear(CrearEmpresaRequest $request): JsonResponse
+
+    /**
+     * Crea una empresa.
+     *
+     * @method      Crear()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       CrearEmpresaRequest $toRequest
+     * @return      JsonResponse
+     */
+    public function Crear(CrearEmpresaRequest $toRequest): JsonResponse
     {
-        $empresa = $this->empresaService->Crear($request->validated());
+        $laDatos = $toRequest->validated();
+        $loEmpresa = $this->poEmpresaService->Crear($laDatos);
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Empresa creada correctamente',
-            'Datos' => $empresa,
+            'Datos' => $loEmpresa,
         ]);
     }
 }

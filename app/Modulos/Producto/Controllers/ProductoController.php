@@ -3,24 +3,46 @@
 namespace App\Modulos\Producto\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modulos\Producto\Services\ProductoService;
 use Illuminate\Http\Request;
+use App\Modulos\Producto\Services\ProductoService;
 
+/**
+ *
+ * Controlador que gestiona la consulta de Productos.
+ *
+ * @category     PagoFacil
+ * @package      Producto
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class ProductoController extends Controller
 {
-    public function __construct(private ProductoService $service) {}
+    protected ProductoService $poProductoService;
 
-    public function Listar(Request $request)
+    public function __construct(ProductoService $toProductoService)
     {
-        $empresa = $request->query('Empresa');
-        $empresa = is_null($empresa) ? null : (int)$empresa;
+        $this->poProductoService = $toProductoService;
+    }
 
-        $datos = $this->service->Listar($empresa);
+    /**
+     * Lista productos (opcionalmente filtrando por Empresa).
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       Request $toRequest
+     */
+    public function Listar(Request $toRequest)
+    {
+        $tnEmpresa = $toRequest->query('Empresa');
+        $tnEmpresa = is_null($tnEmpresa) ? null : (int)$tnEmpresa;
+
+        $loDatos = $this->poProductoService->Listar($tnEmpresa);
 
         return response()->json([
             'Ok' => true,
-            'Mensaje' => $empresa ? "Listado de productos (filtrado por Empresa=$empresa)" : 'Listado de productos',
-            'Datos' => $datos
+            'Mensaje' => $tnEmpresa ? "Listado de productos (filtrado por Empresa=$tnEmpresa)" : 'Listado de productos',
+            'Datos' => $loDatos
         ]);
     }
 }

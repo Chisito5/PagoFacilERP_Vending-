@@ -3,32 +3,60 @@
 namespace App\Modulos\Maquina\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Modulos\Maquina\Services\MaquinaService;
 
+/**
+ *
+ * Controlador que gestiona la consulta de Máquinas y sus Celdas.
+ *
+ * @category     PagoFacil
+ * @package      Maquina
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class MaquinaController extends Controller
 {
-    public function __construct(private MaquinaService $service) {}
+    protected MaquinaService $poMaquinaService;
 
+    public function __construct(MaquinaService $toMaquinaService)
+    {
+        $this->poMaquinaService = $toMaquinaService;
+    }
+
+    /**
+     * Lista máquinas.
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     */
     public function Listar()
     {
-        $datos = $this->service->Listar();
+        $loDatos = $this->poMaquinaService->Listar();
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Listado de máquinas',
-            'Datos' => $datos
+            'Datos' => $loDatos
         ]);
     }
 
-    public function ListarCeldas(int $IdMaquina)
+    /**
+     * Lista celdas por máquina.
+     *
+     * @method      ListarCeldas()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       int $tnMaquina
+     */
+    public function ListarCeldas(int $tnMaquina)
     {
-        $datos = $this->service->ListarCeldas($IdMaquina);
+        $loDatos = $this->poMaquinaService->ListarCeldas($tnMaquina);
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Listado de celdas por máquina',
-            'Datos' => $datos
+            'Datos' => $loDatos
         ]);
     }
 }

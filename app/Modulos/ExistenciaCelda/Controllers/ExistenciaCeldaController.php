@@ -5,29 +5,58 @@ namespace App\Modulos\ExistenciaCelda\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modulos\ExistenciaCelda\Services\ExistenciaCeldaService;
 
+/**
+ *
+ * Controlador que gestiona la consulta de Existencias por Celda.
+ *
+ * @category     PagoFacil
+ * @package      ExistenciaCelda
+ * @author       Equipo PagoFacil
+ * @fecha        26-02-2026
+ */
 class ExistenciaCeldaController extends Controller
 {
-    public function __construct(private ExistenciaCeldaService $service) {}
+    protected ExistenciaCeldaService $poExistenciaCeldaService;
 
+    public function __construct(ExistenciaCeldaService $toExistenciaCeldaService)
+    {
+        $this->poExistenciaCeldaService = $toExistenciaCeldaService;
+    }
+
+    /**
+     * Lista existencias.
+     *
+     * @method      Listar()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     */
     public function Listar()
     {
-        $datos = $this->service->Listar();
+        $loDatos = $this->poExistenciaCeldaService->Listar();
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Listado de existencias por celda',
-            'Datos' => $datos
+            'Datos' => $loDatos
         ]);
     }
 
-    public function ListarPorCelda(int $IdCelda)
+    /**
+     * Lista existencias filtrando por Celda.
+     *
+     * @method      ListarPorCelda()
+     * @author      Equipo PagoFacil
+     * @fecha       26-02-2026
+     * @param       int $tnCelda
+     */
+    public function ListarPorCelda(int $tnCelda)
     {
-        $datos = $this->service->ListarPorCelda($IdCelda);
+        $loDatos = $this->poExistenciaCeldaService->ListarPorCelda($tnCelda);
 
         return response()->json([
             'Ok' => true,
             'Mensaje' => 'Listado de existencias por celda (filtrado)',
-            'Datos' => $datos
+            'Datos' => $loDatos
         ]);
     }
 }
