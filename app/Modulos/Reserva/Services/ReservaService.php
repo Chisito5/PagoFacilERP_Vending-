@@ -2,17 +2,23 @@
 
 namespace App\Modulos\Reserva\Services;
 
+use App\Support\EstadoCatalogo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use stdClass;
 
 class ReservaService
 {
-    private const ESTADO_ACTIVA = 1;
-    private const ESTADO_CONFIRMADA = 2;
-    private const ESTADO_EXPIRADA = 3;
-    private const ESTADO_CANCELADA = 4;
-    private const ESTADO_VENTA_ACTIVA = 1;
+    private const CODIGO_RESERVA_CREADA = 1;
+    private const CODIGO_RESERVA_CONFIRMADA = 2;
+    private const CODIGO_RESERVA_EXPIRADA = 3;
+    private const CODIGO_RESERVA_CANCELADA = 4;
+    private const CODIGO_VENTA_ACTIVA = 1;
+
+    public function __construct(private EstadoCatalogo $toEstadoCatalogo)
+    {
+    }
 
     /**
      * SYSCOOP
@@ -33,6 +39,11 @@ class ReservaService
     public function Reservar(int $tnMaquina, string $tcCodigoSeleccion, int $tnCantidad, int $tnExpiraSegundos)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnMaquina, $tcCodigoSeleccion, $tnCantidad, $tnExpiraSegundos) {
+            try {
+                $laEstadosReserva = $this->obtenerEstadosReserva();
+            } catch (RuntimeException $toEx) {
+                return response()->json(['Ok' => false, 'Mensaje' => $toEx->getMessage()], 500);
+            }
 
             // 1) Resolver CELDA por (Maquina + CodigoSeleccion)
             $loCelda = DB::connection('mysqlNegocio')
@@ -97,7 +108,7 @@ class ReservaService
                     'Maquina' => $tnMaquina,
                     'FechaHoraReserva' => $tdAhora,
                     'ExpiraEn' => $tdExpiraEn,
-                    'Estado' => self::ESTADO_ACTIVA,
+                    'Estado' => $laEstadosReserva['CREADA'],
                     'Usr' => 0,
                     'UsrFecha' => $tdAhora->toDateString(),
                     'UsrHora' => $tdAhora->format('H:i:s'),
@@ -170,7 +181,7 @@ class ReservaService
                     $laDet['CantidadAgregada'] = $tnCantidad;
                 }
 
-                if ($lfHas('Estado')) $laDet['Estado'] = self::ESTADO_ACTIVA;
+                if ($lfHas('Estado')) $laDet['Estado'] = $laEstadosReserva['CREADA'];
                 if ($lfHas('Usr')) $laDet['Usr'] = 0;
                 if ($lfHas('UsrFecha')) $laDet['UsrFecha'] = $tdAhora->toDateString();
                 if ($lfHas('UsrHora')) $laDet['UsrHora'] = $tdAhora->format('H:i:s');
@@ -217,6 +228,12 @@ class ReservaService
     public function Cancelar(int $tnReserva, ?string $tcReservaExterna = null, ?string $tcMotivo = null)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva, $tcReservaExterna, $tcMotivo) {
+            try {
+                $laEstadosReserva = $this->obtenerEstadosReserva();
+            } catch (RuntimeException $toEx) {
+                return response()->json(['Ok' => false, 'Mensaje' => $toEx->getMessage()], 500);
+            }
+
             $loReserva = $this->obtenerReservaConLock($tnReserva, $tcReservaExterna);
 
             if (!$loReserva) {
@@ -225,7 +242,7 @@ class ReservaService
 
             $tnEstado = (int)$loReserva->Estado;
 
-            if ($tnEstado === self::ESTADO_CANCELADA) {
+            if ($tnEstado === $laEstadosReserva['CANCELADA']) {
                 return response()->json([
                     'Ok' => true,
                     'Mensaje' => 'Reserva ya cancelada',
@@ -236,7 +253,7 @@ class ReservaService
                 ]);
             }
 
-            if ($tnEstado === self::ESTADO_EXPIRADA) {
+            if ($tnEstado === $laEstadosReserva['EXPIRADA']) {
                 return response()->json([
                     'Ok' => true,
                     'Mensaje' => 'Reserva ya expirada/liberada',
@@ -247,11 +264,11 @@ class ReservaService
                 ]);
             }
 
-            if ($tnEstado === self::ESTADO_CONFIRMADA) {
+            if ($tnEstado === $laEstadosReserva['CONFIRMADA']) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No se puede cancelar, la reserva ya esta confirmada'], 409);
             }
 
-            if ($tnEstado !== self::ESTADO_ACTIVA) {
+            if ($tnEstado !== $laEstadosReserva['CREADA']) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no esta en estado cancelable'], 409);
             }
 
@@ -278,7 +295,7 @@ class ReservaService
                 ->table('RESERVA')
                 ->where('Reserva', (int)$loReserva->Reserva)
                 ->update([
-                    'Estado' => self::ESTADO_CANCELADA,
+                    'Estado' => $laEstadosReserva['CANCELADA'],
                 ]);
 
             return response()->json([
@@ -310,6 +327,13 @@ class ReservaService
     public function Confirmar(int $tnReserva, ?string $tcReservaExterna = null)
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva, $tcReservaExterna) {
+            try {
+                $laEstadosReserva = $this->obtenerEstadosReserva();
+                $tnEstadoVentaActiva = $this->toEstadoCatalogo->obtenerId('VENTA', self::CODIGO_VENTA_ACTIVA);
+            } catch (RuntimeException $toEx) {
+                return response()->json(['Ok' => false, 'Mensaje' => $toEx->getMessage()], 500);
+            }
+
             $loReserva = $this->obtenerReservaConLock($tnReserva, $tcReservaExterna);
 
             if (!$loReserva) {
@@ -318,7 +342,7 @@ class ReservaService
 
             $tnEstado = (int)$loReserva->Estado;
 
-            if ($tnEstado === self::ESTADO_CONFIRMADA) {
+            if ($tnEstado === $laEstadosReserva['CONFIRMADA']) {
                 return response()->json([
                     'Ok' => true,
                     'Mensaje' => 'Reserva ya confirmada',
@@ -329,15 +353,15 @@ class ReservaService
                 ]);
             }
 
-            if ($tnEstado === self::ESTADO_CANCELADA) {
+            if ($tnEstado === $laEstadosReserva['CANCELADA']) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No se puede confirmar, la reserva esta cancelada'], 409);
             }
 
-            if ($tnEstado === self::ESTADO_EXPIRADA) {
+            if ($tnEstado === $laEstadosReserva['EXPIRADA']) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No se puede confirmar, la reserva esta expirada'], 409);
             }
 
-            if ($tnEstado !== self::ESTADO_ACTIVA) {
+            if ($tnEstado !== $laEstadosReserva['CREADA']) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'La reserva no esta en estado confirmable'], 409);
             }
 
@@ -364,7 +388,7 @@ class ReservaService
                 DB::connection('mysqlNegocio')
                     ->table('RESERVA')
                     ->where('Reserva', (int)$loReserva->Reserva)
-                    ->update(['Estado' => self::ESTADO_EXPIRADA]);
+                    ->update(['Estado' => $laEstadosReserva['EXPIRADA']]);
 
                 return response()->json(['Ok' => false, 'Mensaje' => 'La reserva esta expirada, debe crear una nueva'], 409);
             }
@@ -375,7 +399,7 @@ class ReservaService
             }
 
             $tdAhora = now();
-            if (!$this->registrarVentaDesdeReserva($loReserva, $loDet, $tdAhora)) {
+            if (!$this->registrarVentaDesdeReserva($loReserva, $loDet, $tdAhora, $tnEstadoVentaActiva)) {
                 return response()->json(['Ok' => false, 'Mensaje' => 'No se pudo registrar venta para confirmar la reserva'], 500);
             }
 
@@ -390,7 +414,7 @@ class ReservaService
                 ->table('RESERVA')
                 ->where('Reserva', (int)$loReserva->Reserva)
                 ->update([
-                    'Estado' => self::ESTADO_CONFIRMADA,
+                    'Estado' => $laEstadosReserva['CONFIRMADA'],
                 ]);
 
             return response()->json([
@@ -413,6 +437,18 @@ class ReservaService
      */
     public function ExpirarVencidas(int $tnLote = 100): array
     {
+        try {
+            $laEstadosReserva = $this->obtenerEstadosReserva();
+        } catch (RuntimeException $toEx) {
+            report($toEx);
+            return [
+                'procesadas' => 0,
+                'expiradas' => 0,
+                'saltadas' => 0,
+                'errores' => 1,
+            ];
+        }
+
         $laTotales = [
             'procesadas' => 0,
             'expiradas' => 0,
@@ -422,7 +458,7 @@ class ReservaService
 
         $laReservas = DB::connection('mysqlNegocio')
             ->table('RESERVA')
-            ->where('Estado', self::ESTADO_ACTIVA)
+            ->where('Estado', $laEstadosReserva['CREADA'])
             ->where('ExpiraEn', '<', now())
             ->orderBy('Reserva')
             ->limit($tnLote)
@@ -432,7 +468,7 @@ class ReservaService
             $laTotales['procesadas']++;
 
             try {
-                $lbExpirada = DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva) {
+                $lbExpirada = DB::connection('mysqlNegocio')->transaction(function () use ($tnReserva, $laEstadosReserva) {
                     $loReserva = DB::connection('mysqlNegocio')
                         ->table('RESERVA')
                         ->where('Reserva', (int)$tnReserva)
@@ -443,7 +479,7 @@ class ReservaService
                         return false;
                     }
 
-                    if ((int)$loReserva->Estado !== self::ESTADO_ACTIVA) {
+                    if ((int)$loReserva->Estado !== $laEstadosReserva['CREADA']) {
                         return false;
                     }
 
@@ -473,7 +509,7 @@ class ReservaService
                     DB::connection('mysqlNegocio')
                         ->table('RESERVA')
                         ->where('Reserva', (int)$loReserva->Reserva)
-                        ->update(['Estado' => self::ESTADO_EXPIRADA]);
+                        ->update(['Estado' => $laEstadosReserva['EXPIRADA']]);
 
                     return true;
                 });
@@ -556,7 +592,7 @@ class ReservaService
         return true;
     }
 
-    private function registrarVentaDesdeReserva(stdClass $loReserva, stdClass $loDet, $tdAhora): bool
+    private function registrarVentaDesdeReserva(stdClass $loReserva, stdClass $loDet, $tdAhora, int $tnEstadoVentaActiva): bool
     {
         if (
             !isset($loDet->Celda) ||
@@ -578,12 +614,25 @@ class ReservaService
                 'Cantidad' => (int)$loDet->Cantidad,
                 'PrecioUnitario' => (float)$loDet->PrecioUnitario,
                 'FechaVenta' => $tdAhora,
-                'Estado' => self::ESTADO_VENTA_ACTIVA,
+                'Estado' => $tnEstadoVentaActiva,
                 'Usr' => 0,
                 'UsrFecha' => $tdAhora->toDateString(),
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
 
         return true;
+    }
+
+    /**
+     * @return array{CREADA:int,CONFIRMADA:int,EXPIRADA:int,CANCELADA:int}
+     */
+    private function obtenerEstadosReserva(): array
+    {
+        return [
+            'CREADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_CREADA),
+            'CONFIRMADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_CONFIRMADA),
+            'EXPIRADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_EXPIRADA),
+            'CANCELADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_CANCELADA),
+        ];
     }
 }

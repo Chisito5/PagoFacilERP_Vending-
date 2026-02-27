@@ -2,15 +2,22 @@
 
 namespace App\Modulos\Reposicion\Services;
 
+use App\Support\EstadoCatalogo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use stdClass;
 
 class ReposicionService
 {
-    private const ESTADO_ACTIVO = 1;
+    private const CODIGO_GENERAL_ACTIVO = 1;
+    private const CODIGO_REPOSICION_REGISTRADA = 1;
     private const NOMBRE_TIPO_MOV_REPOSICION = 'REPOSICION';
+
+    public function __construct(private EstadoCatalogo $toEstadoCatalogo)
+    {
+    }
 
     /**
      * SYSCOOP
@@ -47,10 +54,17 @@ class ReposicionService
             $tnLote,
             $tcObservacion
         ) {
+            try {
+                $tnEstadoGeneralActivo = $this->toEstadoCatalogo->obtenerId('GENERAL', self::CODIGO_GENERAL_ACTIVO);
+                $tnEstadoReposicionRegistrada = $this->toEstadoCatalogo->obtenerId('REPOSICION', self::CODIGO_REPOSICION_REGISTRADA);
+            } catch (RuntimeException $toEx) {
+                return response()->json(['Ok' => false, 'Mensaje' => $toEx->getMessage()], 500);
+            }
+
             $loUsuarioOperador = DB::connection('mysqlNegocio')
                 ->table('USUARIO')
                 ->where('Usuario', $tnUsuarioOperador)
-                ->where('Estado', self::ESTADO_ACTIVO)
+                ->where('Estado', $tnEstadoGeneralActivo)
                 ->first();
 
             if (!$loUsuarioOperador) {
@@ -60,7 +74,7 @@ class ReposicionService
                 ], 400);
             }
 
-            $loCelda = $this->obtenerCeldaPorSeleccion($tnMaquina, $tcCodigoSeleccion);
+            $loCelda = $this->obtenerCeldaPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnEstadoGeneralActivo);
             if (!$loCelda) {
                 return response()->json([
                     'Ok' => false,
@@ -69,7 +83,7 @@ class ReposicionService
             }
 
             $tnCelda = (int)$loCelda->Celda;
-            $loExistencia = $this->obtenerExistenciaConLock($tnCelda);
+            $loExistencia = $this->obtenerExistenciaConLock($tnCelda, $tnEstadoGeneralActivo);
             if (!$loExistencia) {
                 return response()->json([
                     'Ok' => false,
@@ -87,7 +101,7 @@ class ReposicionService
                 ], 400);
             }
 
-            $loLote = $this->obtenerLoteConLock($tnLoteFinal);
+            $loLote = $this->obtenerLoteConLock($tnLoteFinal, $tnEstadoGeneralActivo);
             if (!$loLote) {
                 return response()->json([
                     'Ok' => false,
@@ -176,7 +190,7 @@ class ReposicionService
                     'FechaHoraInicio' => $tdAhora,
                     'FechaHoraFin' => $tdAhora,
                     'Observacion' => $tcObservacion,
-                    'Estado' => self::ESTADO_ACTIVO,
+                    'Estado' => $tnEstadoReposicionRegistrada,
                     'Usr' => 0,
                     'UsrFecha' => $tdAhora->toDateString(),
                     'UsrHora' => $tdAhora->format('H:i:s'),
@@ -191,7 +205,7 @@ class ReposicionService
                         'ProductoEmpresa' => $tnProductoEmpresaFinal,
                         'Lote' => $tnLoteFinal,
                         'CantidadAgregada' => $tnCantidad,
-                        'Estado' => self::ESTADO_ACTIVO,
+                        'Estado' => $tnEstadoReposicionRegistrada,
                         'Usr' => 0,
                         'UsrFecha' => $tdAhora->toDateString(),
                         'UsrHora' => $tdAhora->format('H:i:s'),
@@ -206,7 +220,8 @@ class ReposicionService
                 $tnLoteFinal,
                 $tnCantidad,
                 $tdAhora,
-                $tcObservacion
+                $tcObservacion,
+                $tnEstadoGeneralActivo
             );
 
             return response()->json([
@@ -313,33 +328,33 @@ class ReposicionService
         ]);
     }
 
-    private function obtenerCeldaPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion): ?stdClass
+    private function obtenerCeldaPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion, int $tnEstadoGeneralActivo): ?stdClass
     {
         return DB::connection('mysqlNegocio')
             ->table('CELDA')
             ->where('Maquina', $tnMaquina)
             ->where('CodigoSeleccion', $tcCodigoSeleccion)
-            ->where('Estado', self::ESTADO_ACTIVO)
+            ->where('Estado', $tnEstadoGeneralActivo)
             ->lockForUpdate()
             ->first();
     }
 
-    private function obtenerExistenciaConLock(int $tnCelda): ?stdClass
+    private function obtenerExistenciaConLock(int $tnCelda, int $tnEstadoGeneralActivo): ?stdClass
     {
         return DB::connection('mysqlNegocio')
             ->table('EXISTENCIACELDA')
             ->where('Celda', $tnCelda)
-            ->where('Estado', self::ESTADO_ACTIVO)
+            ->where('Estado', $tnEstadoGeneralActivo)
             ->lockForUpdate()
             ->first();
     }
 
-    private function obtenerLoteConLock(int $tnLote): ?stdClass
+    private function obtenerLoteConLock(int $tnLote, int $tnEstadoGeneralActivo): ?stdClass
     {
         return DB::connection('mysqlNegocio')
             ->table('LOTE')
             ->where('Lote', $tnLote)
-            ->where('Estado', self::ESTADO_ACTIVO)
+            ->where('Estado', $tnEstadoGeneralActivo)
             ->lockForUpdate()
             ->first();
     }
@@ -401,7 +416,8 @@ class ReposicionService
         int $tnLote,
         int $tnCantidad,
         $tdAhora,
-        ?string $tcObservacion
+        ?string $tcObservacion,
+        int $tnEstadoGeneralActivo
     ): void {
         if (!Schema::connection('mysqlNegocio')->hasTable('MOVIMIENTOINVENTARIO')) {
             return;
@@ -414,7 +430,7 @@ class ReposicionService
         $loTipo = DB::connection('mysqlNegocio')
             ->table('TIPOMOVIMIENTOINVENTARIO')
             ->whereRaw('UPPER(NombreTipoMovimientoInventario) = ?', [self::NOMBRE_TIPO_MOV_REPOSICION])
-            ->where('Estado', self::ESTADO_ACTIVO)
+            ->where('Estado', $tnEstadoGeneralActivo)
             ->first();
 
         if (!$loTipo || (int)$loTipo->Factor !== 1) {
@@ -436,7 +452,7 @@ class ReposicionService
                 'Transaccion' => null,
                 'FechaHora' => $tdAhora,
                 'Observacion' => $tcObservacion,
-                'Estado' => self::ESTADO_ACTIVO,
+                'Estado' => $tnEstadoGeneralActivo,
                 'Usr' => 0,
                 'UsrFecha' => $tdAhora->toDateString(),
                 'UsrHora' => $tdAhora->format('H:i:s'),
