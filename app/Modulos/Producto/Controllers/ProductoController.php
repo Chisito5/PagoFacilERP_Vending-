@@ -12,7 +12,7 @@ use App\Modulos\Producto\Services\ProductoService;
  *
  * @category     PagoFacil
  * @package      Producto
- * @author       Equipo PagoFacil
+ * @author       Vladimir Meriles Velasquez
  * @fecha        26-02-2026
  */
 class ProductoController extends Controller
@@ -28,7 +28,7 @@ class ProductoController extends Controller
      * Lista productos (opcionalmente filtrando por Empresa).
      *
      * @method      Listar()
-     * @author      Equipo PagoFacil
+     * @author      Vladimir Meriles Velasquez
      * @fecha       26-02-2026
      * @param       Request $toRequest
      */

@@ -11,3 +11,4 @@ require __DIR__ . '/api/producto.php';
 require __DIR__ . '/api/planogramacelda.php';
 require __DIR__ . '/api/existenciacelda.php';
 require __DIR__ . '/api/stock.php';
+require __DIR__ . '/api/reposicion.php';
