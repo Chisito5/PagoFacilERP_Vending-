@@ -2,13 +2,13 @@
 
 namespace App\Modulos\CatalogoAvanzado\Services;
 
+use App\Soporte\ArchivoStorageService;
 use App\Soporte\AuditoriaService;
 use App\Soporte\ControlVersionService;
 use App\Soporte\EstadoNegocioService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class CatalogoAvanzadoService
 {
@@ -17,7 +17,8 @@ class CatalogoAvanzadoService
     public function __construct(
         private EstadoNegocioService $toEstadoNegocio,
         private ControlVersionService $toControlVersion,
-        private AuditoriaService $toAuditoria
+        private AuditoriaService $toAuditoria,
+        private ArchivoStorageService $toArchivoStorage
     ) {
     }
 
@@ -235,8 +236,9 @@ class CatalogoAvanzadoService
 
     public function subirImagenProducto(int $tnProducto, int $tnTipoImagen, UploadedFile $toArchivo, int $tnUsuario, ?string $tcMotivo): array
     {
-        $tcNombre = 'producto_' . $tnProducto . '_' . now()->format('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $toArchivo->getClientOriginalExtension();
-        $tcRuta = $toArchivo->storeAs('producto/imagenes', $tcNombre, 'public');
+        $tnEmpresa = $this->obtenerEmpresaProducto($tnProducto);
+        $laArchivo = $this->toArchivoStorage->subirArchivo($toArchivo, 'producto', $tnEmpresa, 'producto', $tnProducto);
+        $tcRuta = (string)$laArchivo['RutaObjeto'];
 
         return $this->crearImagen([
             'Producto' => $tnProducto,
@@ -342,8 +344,18 @@ class CatalogoAvanzadoService
         $la = (array)$toFila;
         $la['Version'] = $this->toControlVersion->versionDesdeFila($toFila);
         if (isset($la['RutaImagen']) && is_string($la['RutaImagen']) && $la['RutaImagen'] !== '') {
-            $la['UrlImagen'] = Storage::disk('public')->url($la['RutaImagen']);
+            $la['UrlImagen'] = $this->toArchivoStorage->resolverUrl($la['RutaImagen']);
         }
         return $la;
+    }
+
+    private function obtenerEmpresaProducto(int $tnProducto): int
+    {
+        $tnEmpresa = DB::connection($this->pcConexion)
+            ->table('PRODUCTO')
+            ->where('Producto', $tnProducto)
+            ->value('Empresa');
+
+        return $tnEmpresa !== null ? (int)$tnEmpresa : 0;
     }
 }

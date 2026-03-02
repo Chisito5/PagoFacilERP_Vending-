@@ -10,6 +10,8 @@ Route::middleware('auth:api_negocio')->group(function (): void {
     require __DIR__ . '/api/usuario.php';
     require __DIR__ . '/api/estado.php';
     require __DIR__ . '/api/tipoempresa.php';
+    require __DIR__ . '/api/tipointernet.php';
+    require __DIR__ . '/api/tipolugarinstalacion.php';
     require __DIR__ . '/api/venta.php';
     require __DIR__ . '/api/maquina.php';
     require __DIR__ . '/api/maquina_celdas.php';

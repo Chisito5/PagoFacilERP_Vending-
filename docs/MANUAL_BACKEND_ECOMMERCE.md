@@ -69,7 +69,7 @@ Todo el resto de `/api/*` exige:
 
 ### 4.3 Sesion opaca (no JWT)
 
-- Token acceso: 15 minutos
+- Token acceso: 10 minutos
 - Refresh token: 7 dias
 - Tokens guardados hasheados en `SESIONAPI`
 
@@ -419,4 +419,3 @@ Y en JSON para integraciones automaticas:
 ```bash
 php artisan route:list --path=api --except-vendor --json
 ```
-

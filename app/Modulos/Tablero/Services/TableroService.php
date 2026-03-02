@@ -76,19 +76,21 @@ class TableroService
         ];
     }
 
-    public function ejecutivoResumen(int $tnUsuarioSesion, ?int $tnEmpresa, ?string $tcFechaDesde, ?string $tcFechaHasta): array
+    public function ejecutivoResumen(int $tnUsuarioSesion, ?int $tnEmpresa, ?string $tcFechaDesde, ?string $tcFechaHasta, ?int $tnMaquina = null): array
     {
         [$tdDesde, $tdHasta] = $this->resolverRangoFechas($tcFechaDesde, $tcFechaHasta);
         $tnEstadoGeneralActivo = $this->obtenerEstadoSeguro('GENERAL', 1, 1);
         $tnEstadoVentaActiva = $this->obtenerEstadoSeguro('VENTA', 1, 1);
         $tnEstadoAlertaAbierta = $this->obtenerEstadoSeguro('ALERTA', 1, 1);
 
-        $laMaquinasIds = $this->consultaBaseMaquinas($tnUsuarioSesion, $tnEmpresa, null, null)
+        $toConsultaMaquinas = $this->consultaBaseMaquinas($tnUsuarioSesion, $tnEmpresa, null, null)
             ->select('m.Maquina')
-            ->distinct()
-            ->pluck('m.Maquina')
-            ->map(fn ($tnMaquina) => (int)$tnMaquina)
-            ->all();
+            ->distinct();
+        if ($tnMaquina !== null && $tnMaquina > 0) {
+            $toConsultaMaquinas->where('m.Maquina', $tnMaquina);
+        }
+
+        $laMaquinasIds = $toConsultaMaquinas->pluck('m.Maquina')->map(fn ($tnMaq) => (int)$tnMaq)->all();
 
         if (count($laMaquinasIds) === 0) {
             return [
@@ -180,7 +182,8 @@ class TableroService
         int $tnTamanoPagina,
         string $tcOrden,
         ?string $tcFechaDesde,
-        ?string $tcFechaHasta
+        ?string $tcFechaHasta,
+        ?int $tnMaquina = null
     ): array {
         [$tdDesde, $tdHasta] = $this->resolverRangoFechas($tcFechaDesde, $tcFechaHasta);
         $tnEstadoVentaActiva = $this->obtenerEstadoSeguro('VENTA', 1, 1);
@@ -201,8 +204,12 @@ class TableroService
             ->leftJoinSub($this->subconsultaAlertasMaquina($tnEstadoAlertaAbierta), 'al', function ($toJoin): void {
                 $toJoin->on('al.Maquina', '=', 'm.Maquina');
             })
-            ->selectRaw('m.Maquina, m.CodigoMaquina, m.Marca, m.Modelo, m.Estado as EstadoMaquina, m.UsrFecha, m.UsrHora, u.Latitud, u.Longitud, u.Direccion, COALESCE(meo.EstadoOperativo, "NO_DEFINIDO") as EstadoOperativo, COALESCE(ve.Transacciones, 0) as OrdenTransacciones, COALESCE(ve.Ingresos, 0) as OrdenIngresos, COALESCE(al.Abiertas, 0) as OrdenAlertas')
-            ->groupBy('m.Maquina', 'm.CodigoMaquina', 'm.Marca', 'm.Modelo', 'm.Estado', 'm.UsrFecha', 'm.UsrHora', 'u.Latitud', 'u.Longitud', 'u.Direccion', 'meo.EstadoOperativo', 've.Transacciones', 've.Ingresos', 'al.Abiertas');
+            ->selectRaw('m.Maquina, m.CodigoMaquina, m.Marca, m.Modelo, m.Estado as EstadoMaquina, m.ConsumoKwhMensual, m.TipoInternet, ti.CodigoTipoInternet, ti.NombreTipoInternet, u.TipoLugarInstalacion, tli.CodigoTipoLugar, tli.NombreTipoLugar, m.UsrFecha, m.UsrHora, u.Latitud, u.Longitud, u.Direccion, COALESCE(meo.EstadoOperativo, "NO_DEFINIDO") as EstadoOperativo, COALESCE(ve.Transacciones, 0) as OrdenTransacciones, COALESCE(ve.Ingresos, 0) as OrdenIngresos, COALESCE(al.Abiertas, 0) as OrdenAlertas')
+            ->groupBy('m.Maquina', 'm.CodigoMaquina', 'm.Marca', 'm.Modelo', 'm.Estado', 'm.ConsumoKwhMensual', 'm.TipoInternet', 'ti.CodigoTipoInternet', 'ti.NombreTipoInternet', 'u.TipoLugarInstalacion', 'tli.CodigoTipoLugar', 'tli.NombreTipoLugar', 'm.UsrFecha', 'm.UsrHora', 'u.Latitud', 'u.Longitud', 'u.Direccion', 'meo.EstadoOperativo', 've.Transacciones', 've.Ingresos', 'al.Abiertas');
+
+        if ($tnMaquina !== null && $tnMaquina > 0) {
+            $toConsulta->where('m.Maquina', $tnMaquina);
+        }
 
         match ($tcOrden) {
             'ventas' => $toConsulta->orderByDesc('OrdenTransacciones'),
@@ -230,6 +237,17 @@ class TableroService
                 'TipoMaquina' => $this->derivarTipoMaquina((string)($loItem->Marca ?? ''), (string)($loItem->Modelo ?? '')),
                 'EstadoMaquina' => (int)$loItem->EstadoMaquina,
                 'EstadoOperativo' => (string)$loItem->EstadoOperativo,
+                'ConsumoKwhMensual' => (float)($loItem->ConsumoKwhMensual ?? 0),
+                'TipoInternet' => [
+                    'TipoInternet' => $loItem->TipoInternet !== null ? (int)$loItem->TipoInternet : null,
+                    'CodigoTipoInternet' => $loItem->CodigoTipoInternet !== null ? (string)$loItem->CodigoTipoInternet : null,
+                    'NombreTipoInternet' => $loItem->NombreTipoInternet !== null ? (string)$loItem->NombreTipoInternet : null,
+                ],
+                'TipoLugarInstalacion' => [
+                    'TipoLugarInstalacion' => $loItem->TipoLugarInstalacion !== null ? (int)$loItem->TipoLugarInstalacion : null,
+                    'CodigoTipoLugar' => $loItem->CodigoTipoLugar !== null ? (string)$loItem->CodigoTipoLugar : null,
+                    'NombreTipoLugar' => $loItem->NombreTipoLugar !== null ? (string)$loItem->NombreTipoLugar : null,
+                ],
                 'Ubicacion' => [
                     'Latitud' => $loItem->Latitud !== null ? (float)$loItem->Latitud : null,
                     'Longitud' => $loItem->Longitud !== null ? (float)$loItem->Longitud : null,
@@ -256,7 +274,7 @@ class TableroService
         ];
     }
 
-    public function ejecutivoMapa(int $tnUsuarioSesion, ?int $tnEmpresa, ?int $tnEstado, int $tnSoloConCoordenadas, ?string $tcFechaDesde, ?string $tcFechaHasta): array
+    public function ejecutivoMapa(int $tnUsuarioSesion, ?int $tnEmpresa, ?int $tnEstado, int $tnSoloConCoordenadas, ?string $tcFechaDesde, ?string $tcFechaHasta, ?int $tnMaquina = null): array
     {
         [$tdDesde, $tdHasta] = $this->resolverRangoFechas($tcFechaDesde, $tcFechaHasta);
         $tnEstadoVentaActiva = $this->obtenerEstadoSeguro('VENTA', 1, 1);
@@ -265,6 +283,10 @@ class TableroService
             ->leftJoin('MAQUINAESTADOOPERATIVO as meo', 'meo.Maquina', '=', 'm.Maquina')
             ->selectRaw('m.Maquina, m.CodigoMaquina, u.Latitud, u.Longitud, COALESCE(meo.EstadoOperativo, "NO_DEFINIDO") as EstadoOperativo')
             ->groupBy('m.Maquina', 'm.CodigoMaquina', 'u.Latitud', 'u.Longitud', 'meo.EstadoOperativo');
+
+        if ($tnMaquina !== null && $tnMaquina > 0) {
+            $toConsulta->where('m.Maquina', $tnMaquina);
+        }
 
         if ($tnSoloConCoordenadas === 1) {
             $toConsulta->whereNotNull('u.Latitud')->whereNotNull('u.Longitud');
@@ -296,7 +318,7 @@ class TableroService
         return $laDatos;
     }
 
-    public function ejecutivoRanking(int $tnUsuarioSesion, ?int $tnEmpresa, ?string $tcFechaDesde, ?string $tcFechaHasta, int $tnTop, string $tcPor): array
+    public function ejecutivoRanking(int $tnUsuarioSesion, ?int $tnEmpresa, ?string $tcFechaDesde, ?string $tcFechaHasta, int $tnTop, string $tcPor, ?int $tnMaquina = null): array
     {
         [$tdDesde, $tdHasta] = $this->resolverRangoFechas($tcFechaDesde, $tcFechaHasta);
         $tnTop = max(1, min($tnTop, 100));
@@ -309,6 +331,7 @@ class TableroService
         $laMaquinas = $this->consultaBaseMaquinas($tnUsuarioSesion, $tnEmpresa, null, null)
             ->selectRaw('m.Maquina, m.CodigoMaquina')
             ->groupBy('m.Maquina', 'm.CodigoMaquina')
+            ->when($tnMaquina !== null && $tnMaquina > 0, fn (Builder $toQ) => $toQ->where('m.Maquina', $tnMaquina))
             ->get();
 
         $laMaquinasIds = [];
@@ -354,7 +377,7 @@ class TableroService
         $loBase = $this->consultaBaseMaquinas($tnUsuarioSesion, null, null, null)
             ->leftJoin('MAQUINAESTADOOPERATIVO as meo', 'meo.Maquina', '=', 'm.Maquina')
             ->where('m.Maquina', $tnMaquina)
-            ->selectRaw('m.Maquina, m.CodigoMaquina, m.Marca, m.Modelo, m.Estado as EstadoMaquina, m.UsrFecha, m.UsrHora, u.Latitud, u.Longitud, u.Direccion, COALESCE(meo.EstadoOperativo, "NO_DEFINIDO") as EstadoOperativo')
+            ->selectRaw('m.Maquina, m.CodigoMaquina, m.Marca, m.Modelo, m.Estado as EstadoMaquina, m.ConsumoKwhMensual, m.TipoInternet, ti.CodigoTipoInternet, ti.NombreTipoInternet, u.TipoLugarInstalacion, tli.CodigoTipoLugar, tli.NombreTipoLugar, m.UsrFecha, m.UsrHora, u.Latitud, u.Longitud, u.Direccion, COALESCE(meo.EstadoOperativo, "NO_DEFINIDO") as EstadoOperativo')
             ->first();
 
         if (!$loBase) {
@@ -474,6 +497,17 @@ class TableroService
                     'TipoMaquina' => $this->derivarTipoMaquina((string)($loBase->Marca ?? ''), (string)($loBase->Modelo ?? '')),
                     'EstadoMaquina' => (int)$loBase->EstadoMaquina,
                     'EstadoOperativo' => (string)$loBase->EstadoOperativo,
+                    'ConsumoKwhMensual' => (float)($loBase->ConsumoKwhMensual ?? 0),
+                    'TipoInternet' => [
+                        'TipoInternet' => $loBase->TipoInternet !== null ? (int)$loBase->TipoInternet : null,
+                        'CodigoTipoInternet' => $loBase->CodigoTipoInternet !== null ? (string)$loBase->CodigoTipoInternet : null,
+                        'NombreTipoInternet' => $loBase->NombreTipoInternet !== null ? (string)$loBase->NombreTipoInternet : null,
+                    ],
+                    'TipoLugarInstalacion' => [
+                        'TipoLugarInstalacion' => $loBase->TipoLugarInstalacion !== null ? (int)$loBase->TipoLugarInstalacion : null,
+                        'CodigoTipoLugar' => $loBase->CodigoTipoLugar !== null ? (string)$loBase->CodigoTipoLugar : null,
+                        'NombreTipoLugar' => $loBase->NombreTipoLugar !== null ? (string)$loBase->NombreTipoLugar : null,
+                    ],
                     'Ubicacion' => [
                         'Latitud' => $loBase->Latitud !== null ? (float)$loBase->Latitud : null,
                         'Longitud' => $loBase->Longitud !== null ? (float)$loBase->Longitud : null,
@@ -500,11 +534,391 @@ class TableroService
         ];
     }
 
+    public function ejecutivoUnificado(
+        int $tnUsuarioSesion,
+        ?int $tnEmpresa,
+        ?int $tnMaquina,
+        ?int $tnEstado,
+        ?string $tcFechaDesde,
+        ?string $tcFechaHasta,
+        ?string $tcBusqueda,
+        string $tcOrden,
+        string $tcPor,
+        int $tnTop,
+        int $tnPagina,
+        int $tnTamanoPagina,
+        bool $lbIncluirDetalle,
+        bool $lbIncluirCasillas,
+        bool $lbIncluirHistorialReposicion
+    ): array {
+        if ($lbIncluirDetalle && ($tnMaquina === null || $tnMaquina <= 0)) {
+            return ['Estado' => 'DETALLE_REQUIERE_MAQUINA'];
+        }
+
+        [$tdDesde, $tdHasta] = $this->resolverRangoFechas($tcFechaDesde, $tcFechaHasta);
+        $laResumen = $this->ejecutivoResumen($tnUsuarioSesion, $tnEmpresa, $tdDesde->toDateString(), $tdHasta->toDateString(), $tnMaquina);
+        $laMaquinas = $this->ejecutivoMaquinas(
+            $tnUsuarioSesion,
+            $tnEmpresa,
+            $tnEstado,
+            $tcBusqueda,
+            $tnPagina,
+            $tnTamanoPagina,
+            $tcOrden,
+            $tdDesde->toDateString(),
+            $tdHasta->toDateString(),
+            $tnMaquina
+        );
+        $laMapa = $this->ejecutivoMapa(
+            $tnUsuarioSesion,
+            $tnEmpresa,
+            $tnEstado,
+            1,
+            $tdDesde->toDateString(),
+            $tdHasta->toDateString(),
+            $tnMaquina
+        );
+        $laRanking = $this->ejecutivoRanking(
+            $tnUsuarioSesion,
+            $tnEmpresa,
+            $tdDesde->toDateString(),
+            $tdHasta->toDateString(),
+            $tnTop,
+            $tcPor,
+            $tnMaquina
+        );
+
+        $laCasillas = ['Rows' => [], 'Meta' => $this->metaVacia($tnPagina, $tnTamanoPagina)];
+        if ($lbIncluirCasillas) {
+            $laCasillas = $this->obtenerCasillasEjecutivo(
+                $tnUsuarioSesion,
+                $tnEmpresa,
+                $tnMaquina,
+                $tnEstado,
+                $tcBusqueda,
+                $tdDesde,
+                $tdHasta,
+                $tnPagina,
+                $tnTamanoPagina
+            );
+        }
+
+        $laHistorialReposicion = ['Rows' => [], 'Meta' => $this->metaVacia($tnPagina, $tnTamanoPagina)];
+        if ($lbIncluirHistorialReposicion) {
+            $laHistorialReposicion = $this->obtenerHistorialReposicionEjecutivo(
+                $tnUsuarioSesion,
+                $tnEmpresa,
+                $tnMaquina,
+                $tnEstado,
+                $tcBusqueda,
+                $tdDesde,
+                $tdHasta,
+                $tnPagina,
+                $tnTamanoPagina
+            );
+        }
+
+        $laDetalleMaquina = null;
+        if ($lbIncluirDetalle && $tnMaquina !== null && $tnMaquina > 0) {
+            $laDetalle = $this->ejecutivoDetalleMaquina($tnUsuarioSesion, $tnMaquina, $tdDesde->toDateString(), $tdHasta->toDateString());
+            if (($laDetalle['Estado'] ?? '') === 'NO_ENCONTRADO') {
+                return ['Estado' => 'NO_ENCONTRADO'];
+            }
+            if (($laDetalle['Estado'] ?? '') === 'NO_AUTORIZADO') {
+                return ['Estado' => 'NO_AUTORIZADO'];
+            }
+            $laDetalleMaquina = $laDetalle['Datos'] ?? null;
+        }
+
+        return [
+            'Estado' => 'OK',
+            'Datos' => [
+                'Resumen' => $laResumen,
+                'Maquinas' => [
+                    'Rows' => $laMaquinas['Datos'] ?? [],
+                    'Meta' => $laMaquinas['Meta'] ?? $this->metaVacia($tnPagina, $tnTamanoPagina),
+                ],
+                'Mapa' => [
+                    'Rows' => $laMapa,
+                ],
+                'Ranking' => [
+                    'Rows' => $laRanking,
+                ],
+                'Casillas' => $laCasillas,
+                'HistorialReposicion' => $laHistorialReposicion,
+                'DetalleMaquina' => $laDetalleMaquina,
+            ],
+            'Meta' => [
+                'RangoFechas' => [
+                    'FechaDesde' => $tdDesde->toDateString(),
+                    'FechaHasta' => $tdHasta->toDateString(),
+                ],
+                'Filtros' => [
+                    'Empresa' => $tnEmpresa,
+                    'Maquina' => $tnMaquina,
+                    'Estado' => $tnEstado,
+                    'Busqueda' => $tcBusqueda,
+                    'Orden' => $tcOrden,
+                    'Por' => $tcPor,
+                    'Top' => $tnTop,
+                    'Pagina' => $tnPagina,
+                    'TamanoPagina' => $tnTamanoPagina,
+                    'IncluirDetalle' => $lbIncluirDetalle,
+                    'IncluirCasillas' => $lbIncluirCasillas,
+                    'IncluirHistorialReposicion' => $lbIncluirHistorialReposicion,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{Rows:array<int,array<string,mixed>>,Meta:array<string,int>}
+     */
+    private function obtenerCasillasEjecutivo(
+        int $tnUsuarioSesion,
+        ?int $tnEmpresa,
+        ?int $tnMaquina,
+        ?int $tnEstado,
+        ?string $tcBusqueda,
+        Carbon $tdDesde,
+        Carbon $tdHasta,
+        int $tnPagina,
+        int $tnTamanoPagina
+    ): array {
+        $laMaquinasIds = $this->obtenerIdsMaquinasFiltradas($tnUsuarioSesion, $tnEmpresa, $tnEstado, $tcBusqueda, $tnMaquina);
+        if (count($laMaquinasIds) === 0) {
+            return ['Rows' => [], 'Meta' => $this->metaVacia($tnPagina, $tnTamanoPagina)];
+        }
+
+        $tnEstadoGeneralActivo = $this->obtenerEstadoSeguro('GENERAL', 1, 1);
+        $tnEstadoVentaActiva = $this->obtenerEstadoSeguro('VENTA', 1, 1);
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+        $tnPagina = max(1, $tnPagina);
+
+        $toUltimoPlanograma = DB::connection($this->pcConexion)
+            ->table('PLANOGRAMA')
+            ->selectRaw('Maquina, MAX(VersionPlanograma) as VersionPlanograma')
+            ->where('Estado', $tnEstadoGeneralActivo)
+            ->groupBy('Maquina');
+
+        $toPlanogramaCelda = DB::connection($this->pcConexion)
+            ->table('PLANOGRAMA as p')
+            ->joinSub($toUltimoPlanograma, 'up', function ($toJoin): void {
+                $toJoin->on('up.Maquina', '=', 'p.Maquina')->on('up.VersionPlanograma', '=', 'p.VersionPlanograma');
+            })
+            ->join('PLANOGRAMACELDA as pc', 'pc.Planograma', '=', 'p.Planograma')
+            ->where('p.Estado', $tnEstadoGeneralActivo)
+            ->where('pc.Estado', $tnEstadoGeneralActivo)
+            ->selectRaw('pc.Celda, pc.PrecioVenta, pc.StockMinimo, pc.StockMaximo');
+
+        $toCostoPromedio = DB::connection($this->pcConexion)
+            ->table('MOVIMIENTOINVENTARIO')
+            ->whereNotNull('CostoUnitario')
+            ->groupBy('ProductoEmpresa', 'Lote')
+            ->selectRaw('ProductoEmpresa, Lote, AVG(CostoUnitario) as CostoUnitario');
+
+        $toConsulta = DB::connection($this->pcConexion)
+            ->table('EXISTENCIACELDA as ec')
+            ->join('CELDA as c', 'c.Celda', '=', 'ec.Celda')
+            ->leftJoinSub($toPlanogramaCelda, 'pcv', fn ($toJoin) => $toJoin->on('pcv.Celda', '=', 'c.Celda'))
+            ->leftJoin('PRODUCTOEMPRESA as pe', 'pe.ProductoEmpresa', '=', 'ec.ProductoEmpresa')
+            ->leftJoin('PRODUCTO as p', 'p.Producto', '=', 'pe.Producto')
+            ->leftJoin('LOTE as l', 'l.Lote', '=', 'ec.Lote')
+            ->leftJoinSub($toCostoPromedio, 'cp', function ($toJoin): void {
+                $toJoin->on('cp.ProductoEmpresa', '=', 'ec.ProductoEmpresa')->on('cp.Lote', '=', 'ec.Lote');
+            })
+            ->whereIn('c.Maquina', $laMaquinasIds)
+            ->where('c.Estado', $tnEstadoGeneralActivo)
+            ->where('ec.Estado', $tnEstadoGeneralActivo)
+            ->selectRaw('c.Maquina as IdMaquina, c.Celda as IdCelda, c.CodigoSeleccion as NumeroCasilla, ec.ProductoEmpresa, pe.Producto as IdProducto, ec.Lote, l.CodigoLote, l.FechaVencimiento as FechaCaducidad, ec.CantidadDisponible as StockActual, COALESCE(pcv.StockMaximo, c.CapacidadMaxima) as StockMaximo, COALESCE(pcv.StockMinimo, 0) as UmbralAlertaStock, COALESCE(cp.CostoUnitario, 0) as CostoUnitario, COALESCE(pcv.PrecioVenta, p.Precio, 0) as PrecioUnitario')
+            ->orderBy('c.Maquina')
+            ->orderBy('c.Fila')
+            ->orderBy('c.Columna');
+
+        if ($tcBusqueda !== null && trim($tcBusqueda) !== '') {
+            $tcBusqueda = trim($tcBusqueda);
+            $toConsulta->where(function ($toWhere) use ($tcBusqueda): void {
+                $toWhere->where('c.CodigoSeleccion', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('p.NombreProducto', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('l.CodigoLote', 'like', '%' . $tcBusqueda . '%');
+            });
+        }
+
+        $toPaginador = $toConsulta->paginate($tnTamanoPagina, ['*'], 'Pagina', $tnPagina);
+        $laRowsBase = $toPaginador->items();
+
+        $laVentasCelda = DB::connection($this->pcConexion)
+            ->table('VENTA')
+            ->whereIn('Maquina', $laMaquinasIds)
+            ->where('Estado', $tnEstadoVentaActiva)
+            ->whereBetween('FechaVenta', [$tdDesde->copy()->startOfDay(), $tdHasta->copy()->endOfDay()])
+            ->groupBy('Maquina', 'Celda', 'ProductoEmpresa')
+            ->selectRaw('Maquina, Celda, ProductoEmpresa, COALESCE(SUM(Cantidad),0) as Unidades, COALESCE(SUM(Cantidad * PrecioUnitario),0) as Ingresos')
+            ->get();
+
+        $taVentas = [];
+        $taIngresosCelda = [];
+        foreach ($laVentasCelda as $loVenta) {
+            $tcLlave = (int)$loVenta->Maquina . '|' . (int)$loVenta->Celda . '|' . (int)$loVenta->ProductoEmpresa;
+            $taVentas[$tcLlave] = [
+                'Unidades' => (int)$loVenta->Unidades,
+                'Ingresos' => (float)$loVenta->Ingresos,
+            ];
+
+            $tcLlaveCelda = (int)$loVenta->Maquina . '|' . (int)$loVenta->Celda;
+            $taIngresosCelda[$tcLlaveCelda] = (float)($taIngresosCelda[$tcLlaveCelda] ?? 0) + (float)$loVenta->Ingresos;
+        }
+
+        $taPrioridadAbc = $this->calcularPrioridadAbcPorCelda($laMaquinasIds, $taIngresosCelda);
+        $tnDiasPeriodo = max(1, $tdDesde->copy()->startOfDay()->diffInDays($tdHasta->copy()->endOfDay()) + 1);
+
+        $laRows = [];
+        foreach ($laRowsBase as $loFila) {
+            $tcLlave = (int)$loFila->IdMaquina . '|' . (int)$loFila->IdCelda . '|' . (int)$loFila->ProductoEmpresa;
+            $laVenta = $taVentas[$tcLlave] ?? ['Unidades' => 0, 'Ingresos' => 0.0];
+
+            $tnStockActual = (int)$loFila->StockActual;
+            $tnUmbral = (int)$loFila->UmbralAlertaStock;
+            $tnUnidades = (int)$laVenta['Unidades'];
+            $tnPromedioDiario = $tnUnidades > 0 ? ($tnUnidades / $tnDiasPeriodo) : 0.0;
+            $tnDiasSoldOut = $tnPromedioDiario > 0 ? (int)ceil($tnStockActual / $tnPromedioDiario) : null;
+            $tcFechaSoldOut = $tnDiasSoldOut !== null ? now()->copy()->addDays($tnDiasSoldOut)->toDateString() : null;
+
+            $tnDiasCaducidad = null;
+            if (!empty($loFila->FechaCaducidad)) {
+                try {
+                    $tnDiasCaducidad = now()->copy()->startOfDay()->diffInDays(Carbon::parse((string)$loFila->FechaCaducidad)->startOfDay(), false);
+                } catch (Throwable) {
+                    $tnDiasCaducidad = null;
+                }
+            }
+
+            $tnCosto = (float)($loFila->CostoUnitario ?? 0);
+            $tnPrecio = (float)($loFila->PrecioUnitario ?? 0);
+            $tnIngresoEstimado = round($tnStockActual * $tnPrecio, 2);
+            $tnMargenUnitario = round($tnPrecio - $tnCosto, 2);
+
+            $lbStockFugaz = $tnDiasSoldOut !== null && $tnDiasSoldOut <= 7;
+            $tcCategoriaFugaz = $this->categoriaStockFugaz($tnDiasSoldOut);
+
+            $tcLlaveAbc = (int)$loFila->IdMaquina . '|' . (int)$loFila->IdCelda;
+            $laRows[] = [
+                'IdMaquina' => (int)$loFila->IdMaquina,
+                'IdProducto' => $loFila->IdProducto !== null ? (int)$loFila->IdProducto : null,
+                'NumeroCasilla' => (string)$loFila->NumeroCasilla,
+                'StockActual' => $tnStockActual,
+                'StockMaximo' => (int)$loFila->StockMaximo,
+                'Lote' => $loFila->Lote !== null ? (int)$loFila->Lote : null,
+                'CodigoLote' => $loFila->CodigoLote !== null ? (string)$loFila->CodigoLote : null,
+                'FechaCaducidad' => $loFila->FechaCaducidad !== null ? (string)$loFila->FechaCaducidad : null,
+                'FechaProyectadaSoldOut' => $tcFechaSoldOut,
+                'UmbralAlertaStock' => $tnUmbral,
+                'AlertaStockBajo' => $tnUmbral > 0 ? $tnStockActual <= $tnUmbral : false,
+                'PrioridadABC' => $taPrioridadAbc[$tcLlaveAbc] ?? 'C',
+                'EsStockFugaz' => $lbStockFugaz,
+                'CategoriaStockFugaz' => $tcCategoriaFugaz,
+                'CostoUnitario' => $tnCosto,
+                'PrecioUnitario' => $tnPrecio,
+                'IngresoEstimado' => $tnIngresoEstimado,
+                'MargenUnitario' => $tnMargenUnitario,
+                'DiasParaCaducar' => $tnDiasCaducidad,
+                'DiasParaSoldOut' => $tnDiasSoldOut,
+            ];
+        }
+
+        return [
+            'Rows' => $laRows,
+            'Meta' => [
+                'PaginaActual' => $toPaginador->currentPage(),
+                'TamanoPagina' => $toPaginador->perPage(),
+                'TotalRegistros' => $toPaginador->total(),
+                'TotalPaginas' => $toPaginador->lastPage(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{Rows:array<int,array<string,mixed>>,Meta:array<string,int>}
+     */
+    private function obtenerHistorialReposicionEjecutivo(
+        int $tnUsuarioSesion,
+        ?int $tnEmpresa,
+        ?int $tnMaquina,
+        ?int $tnEstado,
+        ?string $tcBusqueda,
+        Carbon $tdDesde,
+        Carbon $tdHasta,
+        int $tnPagina,
+        int $tnTamanoPagina
+    ): array {
+        $laMaquinasIds = $this->obtenerIdsMaquinasFiltradas($tnUsuarioSesion, $tnEmpresa, $tnEstado, $tcBusqueda, $tnMaquina);
+        if (count($laMaquinasIds) === 0) {
+            return ['Rows' => [], 'Meta' => $this->metaVacia($tnPagina, $tnTamanoPagina)];
+        }
+
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+        $tnPagina = max(1, $tnPagina);
+
+        $toConsulta = DB::connection($this->pcConexion)
+            ->table('REPOSICIONDETALLE as rd')
+            ->join('REPOSICION as r', 'r.Reposicion', '=', 'rd.Reposicion')
+            ->join('CELDA as c', 'c.Celda', '=', 'rd.Celda')
+            ->leftJoin('USUARIO as u', 'u.Usuario', '=', 'r.UsuarioOperador')
+            ->leftJoin('EXISTENCIACELDA as ec', 'ec.Celda', '=', 'rd.Celda')
+            ->whereIn('r.Maquina', $laMaquinasIds)
+            ->whereBetween('r.FechaHoraInicio', [$tdDesde->copy()->startOfDay(), $tdHasta->copy()->endOfDay()])
+            ->selectRaw('r.Reposicion as IdReposicion, r.Maquina as IdMaquina, c.CodigoSeleccion as NumeroCasilla, r.UsuarioOperador as IdReponedor, COALESCE(u.NombreUsuario, "") as UsuarioReponedor, r.FechaHoraInicio as FechaReposicion, rd.CantidadAgregada as CantidadRecargada, ec.CantidadDisponible as CantidadDespuesActual, rd.Lote, r.Observacion as Motivo')
+            ->orderByDesc('r.FechaHoraInicio')
+            ->orderByDesc('r.Reposicion');
+
+        if ($tcBusqueda !== null && trim($tcBusqueda) !== '') {
+            $tcBusqueda = trim($tcBusqueda);
+            $toConsulta->where(function ($toWhere) use ($tcBusqueda): void {
+                $toWhere->where('c.CodigoSeleccion', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('u.NombreUsuario', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('r.Observacion', 'like', '%' . $tcBusqueda . '%');
+            });
+        }
+
+        $toPaginador = $toConsulta->paginate($tnTamanoPagina, ['*'], 'Pagina', $tnPagina);
+        $laRows = [];
+        foreach ($toPaginador->items() as $loFila) {
+            $tnCantidadDespues = $loFila->CantidadDespuesActual !== null ? (int)$loFila->CantidadDespuesActual : null;
+            $tnCantidadAntes = $tnCantidadDespues !== null ? max(0, $tnCantidadDespues - (int)$loFila->CantidadRecargada) : null;
+
+            $laRows[] = [
+                'IdReposicion' => (int)$loFila->IdReposicion,
+                'IdMaquina' => (int)$loFila->IdMaquina,
+                'NumeroCasilla' => (string)$loFila->NumeroCasilla,
+                'IdReponedor' => (int)$loFila->IdReponedor,
+                'UsuarioReponedor' => (string)$loFila->UsuarioReponedor,
+                'FechaReposicion' => (string)$loFila->FechaReposicion,
+                'CantidadAntes' => $tnCantidadAntes,
+                'CantidadRecargada' => (int)$loFila->CantidadRecargada,
+                'CantidadDespues' => $tnCantidadDespues,
+                'Lote' => $loFila->Lote !== null ? (int)$loFila->Lote : null,
+                'Motivo' => $loFila->Motivo !== null ? (string)$loFila->Motivo : null,
+            ];
+        }
+
+        return [
+            'Rows' => $laRows,
+            'Meta' => [
+                'PaginaActual' => $toPaginador->currentPage(),
+                'TamanoPagina' => $toPaginador->perPage(),
+                'TotalRegistros' => $toPaginador->total(),
+                'TotalPaginas' => $toPaginador->lastPage(),
+            ],
+        ];
+    }
+
     private function consultaBaseMaquinas(int $tnUsuarioSesion, ?int $tnEmpresa, ?int $tnEstado, ?string $tcBusqueda): Builder
     {
         $toConsulta = DB::connection($this->pcConexion)
             ->table('MAQUINA as m')
-            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual');
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->leftJoin('TIPOINTERNET as ti', 'ti.TipoInternet', '=', 'm.TipoInternet')
+            ->leftJoin('TIPOLUGARINSTALACION as tli', 'tli.TipoLugarInstalacion', '=', 'u.TipoLugarInstalacion');
 
         if ($tnEstado !== null && $tnEstado > 0) {
             $toConsulta->where('m.Estado', $tnEstado);
@@ -816,6 +1230,101 @@ class TableroService
             ->all();
     }
 
+    /**
+     * @return array<int,int>
+     */
+    private function obtenerIdsMaquinasFiltradas(
+        int $tnUsuarioSesion,
+        ?int $tnEmpresa,
+        ?int $tnEstado,
+        ?string $tcBusqueda,
+        ?int $tnMaquina
+    ): array {
+        $toConsulta = $this->consultaBaseMaquinas($tnUsuarioSesion, $tnEmpresa, $tnEstado, $tcBusqueda)
+            ->select('m.Maquina')
+            ->distinct();
+
+        if ($tnMaquina !== null && $tnMaquina > 0) {
+            $toConsulta->where('m.Maquina', $tnMaquina);
+        }
+
+        return $toConsulta
+            ->pluck('m.Maquina')
+            ->map(fn ($tnId) => (int)$tnId)
+            ->all();
+    }
+
+    /**
+     * @param array<int,int> $laMaquinasIds
+     * @param array<string,float> $taIngresosCelda
+     * @return array<string,string>
+     */
+    private function calcularPrioridadAbcPorCelda(array $laMaquinasIds, array $taIngresosCelda): array
+    {
+        if (count($laMaquinasIds) === 0) {
+            return [];
+        }
+
+        $tnEstadoGeneralActivo = $this->obtenerEstadoSeguro('GENERAL', 1, 1);
+        $laCeldas = DB::connection($this->pcConexion)
+            ->table('CELDA')
+            ->whereIn('Maquina', $laMaquinasIds)
+            ->where('Estado', $tnEstadoGeneralActivo)
+            ->select('Maquina', 'Celda')
+            ->get();
+
+        $taPorMaquina = [];
+        foreach ($laCeldas as $loCelda) {
+            $tcLlave = (int)$loCelda->Maquina . '|' . (int)$loCelda->Celda;
+            $taPorMaquina[(int)$loCelda->Maquina][] = [
+                'Llave' => $tcLlave,
+                'Ingresos' => (float)($taIngresosCelda[$tcLlave] ?? 0),
+            ];
+        }
+
+        $taResultado = [];
+        foreach ($taPorMaquina as $laItems) {
+            usort($laItems, fn (array $a, array $b) => $b['Ingresos'] <=> $a['Ingresos']);
+            $tnTotal = max(1, count($laItems));
+            foreach ($laItems as $tnIdx => $laItem) {
+                $tnPosicion = ($tnIdx + 1) / $tnTotal;
+                $taResultado[$laItem['Llave']] = $tnPosicion <= 0.2 ? 'A' : ($tnPosicion <= 0.5 ? 'B' : 'C');
+            }
+        }
+
+        return $taResultado;
+    }
+
+    private function categoriaStockFugaz(?int $tnDiasParaSoldOut): string
+    {
+        if ($tnDiasParaSoldOut === null) {
+            return 'SIN_VENTA';
+        }
+        if ($tnDiasParaSoldOut <= 3) {
+            return 'ALTO';
+        }
+        if ($tnDiasParaSoldOut <= 7) {
+            return 'MEDIO';
+        }
+        if ($tnDiasParaSoldOut <= 15) {
+            return 'BAJO';
+        }
+        return 'ESTABLE';
+    }
+
+    /**
+     * @return array{PaginaActual:int,TamanoPagina:int,TotalRegistros:int,TotalPaginas:int}
+     */
+    private function metaVacia(int $tnPagina, int $tnTamanoPagina): array
+    {
+        return [
+            'PaginaActual' => max(1, $tnPagina),
+            'TamanoPagina' => max(1, $tnTamanoPagina),
+            'TotalRegistros' => 0,
+            'TotalPaginas' => 0,
+        ];
+    }
+
     private function derivarNombreMaquina(string $tcCodigoMaquina, int $tnMaquina): string
     {
         $tcCodigoMaquina = trim($tcCodigoMaquina);
@@ -875,7 +1384,13 @@ class TableroService
             return '';
         }
 
-        $tcRol = strtr($tcRol, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n', 'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ñ' => 'N']);
+        if (function_exists('iconv')) {
+            $tcConvertido = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $tcRol);
+            if (is_string($tcConvertido) && $tcConvertido !== '') {
+                $tcRol = $tcConvertido;
+            }
+        }
+
         return strtoupper($tcRol);
     }
 
@@ -888,4 +1403,5 @@ class TableroService
         }
     }
 }
+
 

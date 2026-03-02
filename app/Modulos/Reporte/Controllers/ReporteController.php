@@ -96,6 +96,6 @@ class ReporteController extends Controller
             return RespuestaApi::error('Reporte expirado', 410);
         }
 
-        return Storage::disk('public')->download((string)$la['Ruta'], (string)$la['Nombre']);
+        return Storage::disk((string)$la['Disco'])->download((string)$la['Ruta'], (string)$la['Nombre']);
     }
 }

@@ -1,0 +1,52 @@
+{
+  "info": {
+    "name": "API Maquina Operativa - Catalogos",
+    "_postman_id": "c87dc8de-4c98-4d12-a492-8e3b93fe4aba",
+    "description": "Coleccion auxiliar para catalogos de tipo de internet y tipo de lugar de instalacion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET Tipos Internet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tipointernet",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tipointernet"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET Tipos Lugar Instalacion",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tipolugarinstalacion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tipolugarinstalacion"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

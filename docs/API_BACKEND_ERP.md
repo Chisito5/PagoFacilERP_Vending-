@@ -1,6 +1,6 @@
 # API_BACKEND_ERP
 
-Documento tecnico del backend ERP (R1 + R2) actualizado al **01-03-2026**.
+Documento tecnico del backend ERP (R1 + R2) actualizado al **02-03-2026**.
 
 Manual integral para equipo e-commerce:
 - `docs/MANUAL_BACKEND_ECOMMERCE.md`
@@ -97,10 +97,20 @@ En `PUT/PATCH /api/maquina/{IdMaquina}` se pueden editar:
 - `Marca`
 - `Modelo`
 - `IdentificadorConexion`
+- `TipoInternet`
+- `ConsumoKwhMensual`
 - `UbicacionActual`
 - `FilasMatriz`
 - `ColumnasMatriz`
 - `Estado` (requiere `Aprobacion` valida)
+
+Nuevos datos operativos disponibles en `GET /api/maquina` y `GET /api/maquina/{IdMaquina}`:
+- `ConsumoKwhMensual`
+- `TipoInternet`, `CodigoTipoInternet`, `NombreTipoInternet`
+- `TipoLugarInstalacion`, `CodigoTipoLugar`, `NombreTipoLugar`
+
+Actualizacion de ubicacion:
+- `PUT /api/maquina/{Maquina}/ubicacion` acepta `TipoLugarInstalacion` opcional para clasificar el lugar (oficina, supermercado, campo de futbol, etc.).
 
 Campos gestionados por backend (no editables desde cliente):
 - `Maquina` (autoincremental)
@@ -247,6 +257,9 @@ Filtros comunes:
 - `GET /api/tablero/ejecutivo/mapa?Empresa=&Estado=&SoloConCoordenadas=1&FechaDesde=&FechaHasta=`
 - `GET /api/tablero/ejecutivo/ranking?Empresa=&FechaDesde=&FechaHasta=&Top=10&Por=ventas|ingresos|alertas|margen`
 - `GET /api/tablero/ejecutivo/maquina/{IdMaquina}/detalle?FechaDesde=&FechaHasta=`
+- `GET /api/tablero/ejecutivo/unificado?Empresa=&Maquina=&Estado=&FechaDesde=&FechaHasta=&Busqueda=&Orden=&Por=&Top=&Pagina=&TamanoPagina=&IncluirDetalle=&IncluirCasillas=&IncluirHistorialReposicion=`
+- `GET /api/tipointernet`
+- `GET /api/tipolugarinstalacion`
 - `GET /api/maquina`, `GET /api/maquina/{IdMaquina}`, `GET /api/maquina/{IdMaquina}/celda`
 - `GET /api/stock/maquina/{IdMaquina}`
 - `GET /api/stock/maquina/{IdMaquina}/seleccion/{CodigoSeleccion}`
@@ -382,14 +395,22 @@ Notas operativas:
 - `GET /api/tablero/ejecutivo/resumen`
   - `Datos`: `TotalMaquinas`, `MaquinasActivas`, `MaquinasConAlerta`, `VentasTotal`, `IngresosTotal`, `MaquinaTopVentas`, `ProductoTopGlobal`.
 - `GET /api/tablero/ejecutivo/maquinas`
-  - `Datos[]`: `IdMaquina`, `CodigoMaquina`, `NombreMaquina`, `TipoMaquina`, `EstadoMaquina`, `EstadoOperativo`, `Ubicacion`, `Responsables`, `VentasPeriodo`, `ProductoEstrella`, `Alertas`, `Version`, `UsrFecha`, `UsrHora`.
+  - `Datos[]`: `IdMaquina`, `CodigoMaquina`, `NombreMaquina`, `TipoMaquina`, `EstadoMaquina`, `EstadoOperativo`, `ConsumoKwhMensual`, `TipoInternet`, `TipoLugarInstalacion`, `Ubicacion`, `Responsables`, `VentasPeriodo`, `ProductoEstrella`, `Alertas`, `Version`, `UsrFecha`, `UsrHora`.
   - `Meta`: paginacion estandar.
 - `GET /api/tablero/ejecutivo/mapa`
   - `Datos[]`: `IdMaquina`, `CodigoMaquina`, `Latitud`, `Longitud`, `EstadoOperativo`, `NivelAlerta`, `IngresosPeriodo`, `VentasPeriodo`.
 - `GET /api/tablero/ejecutivo/ranking`
   - `Datos[]`: `IdMaquina`, `CodigoMaquina`, `NombreMaquina`, `Valor`.
 - `GET /api/tablero/ejecutivo/maquina/{IdMaquina}/detalle`
-  - `Datos`: `Maquina`, `Responsables`, `VentasResumen`, `ProductoEstrella`, `TopProductos`, `AlertasActivas`, `VentasPorDia`, `MermasResumen`, `UltimosMovimientosStock`, `Alertas`.
+  - `Datos`: `Maquina` (incluye `ConsumoKwhMensual`, `TipoInternet`, `TipoLugarInstalacion`), `Responsables`, `VentasResumen`, `ProductoEstrella`, `TopProductos`, `AlertasActivas`, `VentasPorDia`, `MermasResumen`, `UltimosMovimientosStock`, `Alertas`.
+- `GET /api/tablero/ejecutivo/unificado`
+  - `Datos.Resumen`: resumen ejecutivo.
+  - `Datos.Maquinas`: `{ Rows, Meta }`.
+  - `Datos.Mapa`: `{ Rows }`.
+  - `Datos.Ranking`: `{ Rows }`.
+  - `Datos.Casillas`: `{ Rows, Meta }` (si `IncluirCasillas=1`).
+  - `Datos.HistorialReposicion`: `{ Rows, Meta }` (si `IncluirHistorialReposicion=1`).
+  - `Datos.DetalleMaquina`: detalle (si `IncluirDetalle=1` y `Maquina` puntual).
 
 ## 7. Tiempo real (Reverb)
 Canales privados:
@@ -442,3 +463,28 @@ php artisan reverb:start
 5. Repetir mismo `X-IoT-EventId + X-IoT-Origen` devuelve respuesta idempotente.
 6. Generar reporte y verificar transicion a `LISTO` + descarga.
 7. Crear merma, aprobar con aprobacion valida y validar movimiento de stock.
+
+## 12. Almacenamiento S3 (archivos nuevos)
+Configuracion activa para cargas nuevas:
+
+```env
+FILESYSTEM_DISK=s3
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=fileaws.pagofacil.com.bo
+AWS_URL=http://fileaws.pagofacil.com.bo
+AWS_USE_PATH_STYLE_ENDPOINT=true
+```
+
+Convencion de rutas en S3:
+- `PagoFacil_VendingMachine/VendingMachineQr/empresa_{id}/...`
+- `PagoFacil_VendingMachine/VEndingMachineproductosIMg/empresa_{id}/...`
+- `PagoFacil_VendingMachine/VendingMachineFondos/empresa_{id}/...`
+- `PagoFacil_VendingMachine/VendingMachineMaquinasImg/empresa_{id}/...`
+- `PagoFacil_VendingMachine/VendingMachineMermasEvidencia/empresa_{id}/...`
+- `PagoFacil_VendingMachine/VendingMachineReportes/empresa_{id}/...`
+
+Reglas operativas:
+1. Las cargas nuevas de maquina, producto/diseno, merma y reportes van a S3.
+2. En BD se guarda `RutaImagen`/`RutaArchivo` como key del objeto S3.
+3. Historicos locales no se migran en este paso y siguen resolviendo URL local automaticamente.
+4. El contrato API no cambia; solo cambia el dominio de `UrlImagen`/`UrlArchivo` para archivos nuevos.

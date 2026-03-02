@@ -12,5 +12,6 @@ Route::prefix('tablero')->group(function () {
         Route::get('/mapa', [TableroController::class, 'EjecutivoMapa']);
         Route::get('/ranking', [TableroController::class, 'EjecutivoRanking']);
         Route::get('/maquina/{tnMaquina}/detalle', [TableroController::class, 'EjecutivoDetalleMaquina']);
+        Route::get('/unificado', [TableroController::class, 'EjecutivoUnificado']);
     });
 });

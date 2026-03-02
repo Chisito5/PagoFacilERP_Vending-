@@ -38,6 +38,7 @@ class MaquinaOperativoController extends Controller
     {
         $toRequest->validate([
             'Ubicacion' => ['required', 'integer', 'min:1'],
+            'TipoLugarInstalacion' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:mysqlNegocio.TIPOLUGARINSTALACION,TipoLugarInstalacion'],
             'Version' => ['required', 'string', 'max:30'],
             'Motivo' => ['nullable', 'string', 'max:255'],
         ]);
@@ -50,6 +51,9 @@ class MaquinaOperativoController extends Controller
         $la = $this->toService->actualizarUbicacion(
             $tnMaquina,
             (int)$toRequest->input('Ubicacion'),
+            $toRequest->has('TipoLugarInstalacion')
+                ? ($toRequest->filled('TipoLugarInstalacion') ? (int)$toRequest->input('TipoLugarInstalacion') : null)
+                : null,
             (string)$toRequest->input('Version'),
             $tnUsuarioSesion,
             $toRequest->filled('Motivo') ? (string)$toRequest->input('Motivo') : null

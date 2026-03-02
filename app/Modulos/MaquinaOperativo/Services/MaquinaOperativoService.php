@@ -24,11 +24,13 @@ class MaquinaOperativoService
         $lo = DB::connection($this->pcConexion)
             ->table('MAQUINA as m')
             ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->leftJoin('TIPOLUGARINSTALACION as tli', 'tli.TipoLugarInstalacion', '=', 'u.TipoLugarInstalacion')
             ->select([
                 'm.Maquina', 'm.UbicacionActual', 'm.UsrFecha', 'm.UsrHora',
                 'u.Ubicacion', 'u.Empresa', 'u.NombreUbicacion', 'u.Departamento', 'u.Ciudad',
                 'u.Zona', 'u.Direccion', 'u.Referencia', 'u.Latitud', 'u.Longitud', 'u.ContactoNombre',
-                'u.ContactoTelefono', 'u.Estado'
+                'u.ContactoTelefono', 'u.Estado', 'u.TipoLugarInstalacion',
+                'tli.CodigoTipoLugar', 'tli.NombreTipoLugar'
             ])
             ->where('m.Maquina', $tnMaquina)
             ->first();
@@ -42,9 +44,23 @@ class MaquinaOperativoService
         return $la;
     }
 
-    public function actualizarUbicacion(int $tnMaquina, int $tnUbicacion, string $tcVersion, int $tnUsuarioSesion, ?string $tcMotivo): array
+    public function actualizarUbicacion(
+        int $tnMaquina,
+        int $tnUbicacion,
+        ?int $tnTipoLugarInstalacion,
+        string $tcVersion,
+        int $tnUsuarioSesion,
+        ?string $tcMotivo
+    ): array
     {
-        return DB::connection($this->pcConexion)->transaction(function () use ($tnMaquina, $tnUbicacion, $tcVersion, $tnUsuarioSesion, $tcMotivo): array {
+        return DB::connection($this->pcConexion)->transaction(function () use (
+            $tnMaquina,
+            $tnUbicacion,
+            $tnTipoLugarInstalacion,
+            $tcVersion,
+            $tnUsuarioSesion,
+            $tcMotivo
+        ): array {
             $loActual = DB::connection($this->pcConexion)->table('MAQUINA')->where('Maquina', $tnMaquina)->lockForUpdate()->first();
             if (!$loActual) {
                 return ['Estado' => 'NO_ENCONTRADO'];
@@ -60,6 +76,18 @@ class MaquinaOperativoService
                 'UsrFecha' => $tdAhora->toDateString(),
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
+
+            if ($tnTipoLugarInstalacion !== null) {
+                DB::connection($this->pcConexion)
+                    ->table('UBICACION')
+                    ->where('Ubicacion', $tnUbicacion)
+                    ->update([
+                        'TipoLugarInstalacion' => $tnTipoLugarInstalacion,
+                        'Usr' => $tnUsuarioSesion,
+                        'UsrFecha' => $tdAhora->toDateString(),
+                        'UsrHora' => $tdAhora->format('H:i:s'),
+                    ]);
+            }
 
             $laAntes = (array)$loActual;
             $laDespues = $this->obtenerUbicacion($tnMaquina) ?? [];

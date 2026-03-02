@@ -4,10 +4,10 @@ namespace App\Jobs;
 
 use App\Modulos\Analitica\Services\AnaliticaService;
 use App\Modulos\Reporte\Services\ReporteService;
+use App\Soporte\ArchivoStorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ProcesarReporteGeneradoJob implements ShouldQueue
 {
@@ -21,7 +21,7 @@ class ProcesarReporteGeneradoJob implements ShouldQueue
     {
     }
 
-    public function handle(ReporteService $toReporteService, AnaliticaService $toAnaliticaService): void
+    public function handle(ReporteService $toReporteService, AnaliticaService $toAnaliticaService, ArchivoStorageService $toArchivoStorage): void
     {
         $loReporte = DB::connection('mysqlNegocio')
             ->table('REPORTEGENERADO')
@@ -45,12 +45,19 @@ class ProcesarReporteGeneradoJob implements ShouldQueue
             $tcContenido = $this->generarContenido($laDatos, $tcFormato);
             $tcExtension = strtolower($tcFormato);
             $tcNombre = 'reporte_' . strtolower($tcTipo) . '_' . now()->format('YmdHis') . '_' . $this->pnReporteGenerado . '.' . $tcExtension;
-            $tcRuta = 'reportes/' . $tcNombre;
-
-            Storage::disk('public')->put($tcRuta, $tcContenido);
-
-            $tnTamano = (int)Storage::disk('public')->size($tcRuta);
             $tcMime = $this->mimePorFormato($tcFormato);
+            $tnEmpresa = (int)($loReporte->Empresa ?? 0);
+            $laArchivo = $toArchivoStorage->guardarContenido(
+                $tcContenido,
+                'reporte',
+                $tnEmpresa,
+                'reporte',
+                $this->pnReporteGenerado,
+                $tcExtension,
+                $tcMime
+            );
+            $tcRuta = (string)$laArchivo['RutaObjeto'];
+            $tnTamano = (int)$laArchivo['TamanoBytes'];
 
             $toReporteService->marcarListo($this->pnReporteGenerado, $tcNombre, $tcRuta, $tcMime, $tnTamano, $tnUsuario);
         } catch (\Throwable $toEx) {

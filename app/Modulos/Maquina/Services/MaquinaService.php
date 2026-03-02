@@ -2,13 +2,13 @@
 
 namespace App\Modulos\Maquina\Services;
 
+use App\Soporte\ArchivoStorageService;
 use App\Soporte\AuditoriaService;
 use App\Soporte\ControlVersionService;
 use App\Support\EstadoCatalogo;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class MaquinaService
 {
@@ -17,7 +17,8 @@ class MaquinaService
     public function __construct(
         private EstadoCatalogo $toEstadoCatalogo,
         private ControlVersionService $toControlVersion,
-        private AuditoriaService $toAuditoria
+        private AuditoriaService $toAuditoria,
+        private ArchivoStorageService $toArchivoStorage
     ) {
     }
 
@@ -33,6 +34,8 @@ class MaquinaService
         $loConsulta = DB::connection($this->pcConexion)
             ->table('MAQUINA as m')
             ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->leftJoin('TIPOINTERNET as ti', 'ti.TipoInternet', '=', 'm.TipoInternet')
+            ->leftJoin('TIPOLUGARINSTALACION as tli', 'tli.TipoLugarInstalacion', '=', 'u.TipoLugarInstalacion')
             ->select([
                 'm.Maquina',
                 'm.CodigoMaquina',
@@ -40,11 +43,18 @@ class MaquinaService
                 'm.Marca',
                 'm.Modelo',
                 'm.IdentificadorConexion',
+                'm.TipoInternet',
+                'm.ConsumoKwhMensual',
                 'm.UbicacionActual',
                 'm.FilasMatriz',
                 'm.ColumnasMatriz',
                 'u.Empresa as Empresa',
                 'u.NombreUbicacion',
+                'u.TipoLugarInstalacion',
+                'ti.CodigoTipoInternet',
+                'ti.NombreTipoInternet',
+                'tli.CodigoTipoLugar',
+                'tli.NombreTipoLugar',
                 'm.Estado',
                 'm.Usr',
                 'm.UsrFecha',
@@ -65,6 +75,8 @@ class MaquinaService
                     ->orWhere('m.NumeroSerie', 'like', '%' . $tcBusqueda . '%')
                     ->orWhere('m.Marca', 'like', '%' . $tcBusqueda . '%')
                     ->orWhere('m.Modelo', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('ti.NombreTipoInternet', 'like', '%' . $tcBusqueda . '%')
+                    ->orWhere('tli.NombreTipoLugar', 'like', '%' . $tcBusqueda . '%')
                     ->orWhere('u.NombreUbicacion', 'like', '%' . $tcBusqueda . '%');
             });
         }
@@ -75,8 +87,35 @@ class MaquinaService
     public function Obtener(int $tnMaquina): ?array
     {
         $loFila = DB::connection($this->pcConexion)
-            ->table('MAQUINA')
-            ->where('Maquina', $tnMaquina)
+            ->table('MAQUINA as m')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->leftJoin('TIPOINTERNET as ti', 'ti.TipoInternet', '=', 'm.TipoInternet')
+            ->leftJoin('TIPOLUGARINSTALACION as tli', 'tli.TipoLugarInstalacion', '=', 'u.TipoLugarInstalacion')
+            ->select([
+                'm.Maquina',
+                'm.CodigoMaquina',
+                'm.NumeroSerie',
+                'm.Marca',
+                'm.Modelo',
+                'm.IdentificadorConexion',
+                'm.TipoInternet',
+                'm.ConsumoKwhMensual',
+                'm.UbicacionActual',
+                'm.FilasMatriz',
+                'm.ColumnasMatriz',
+                'm.Estado',
+                'm.Usr',
+                'm.UsrFecha',
+                'm.UsrHora',
+                'u.Empresa',
+                'u.NombreUbicacion',
+                'u.TipoLugarInstalacion',
+                'ti.CodigoTipoInternet',
+                'ti.NombreTipoInternet',
+                'tli.CodigoTipoLugar',
+                'tli.NombreTipoLugar',
+            ])
+            ->where('m.Maquina', $tnMaquina)
             ->first();
 
         return $loFila ? $this->normalizarFila($loFila) : null;
@@ -113,6 +152,7 @@ class MaquinaService
     {
         $tdAhora = now();
         $tnEstadoActivo = $this->toEstadoCatalogo->obtenerId('GENERAL', 1);
+        $tnTipoInternetOtro = $this->obtenerTipoInternetPorCodigo('OTRO');
 
         $tnId = DB::connection($this->pcConexion)
             ->table('MAQUINA')
@@ -122,6 +162,8 @@ class MaquinaService
                 'Marca' => $taDatos['Marca'] ?? null,
                 'Modelo' => $taDatos['Modelo'] ?? null,
                 'IdentificadorConexion' => $taDatos['IdentificadorConexion'],
+                'TipoInternet' => isset($taDatos['TipoInternet']) ? (int)$taDatos['TipoInternet'] : $tnTipoInternetOtro,
+                'ConsumoKwhMensual' => isset($taDatos['ConsumoKwhMensual']) ? (float)$taDatos['ConsumoKwhMensual'] : 0,
                 'UbicacionActual' => $taDatos['UbicacionActual'] ?? null,
                 'FilasMatriz' => (int)($taDatos['FilasMatriz'] ?? 6),
                 'ColumnasMatriz' => (int)($taDatos['ColumnasMatriz'] ?? 9),
@@ -131,8 +173,7 @@ class MaquinaService
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
 
-        $loNuevo = DB::connection($this->pcConexion)->table('MAQUINA')->where('Maquina', $tnId)->first();
-        $laNuevo = $this->normalizarFila($loNuevo);
+        $laNuevo = $this->Obtener($tnId) ?? [];
         $this->toAuditoria->registrar('MAQUINA', $tnId, 'CREAR', null, $laNuevo, $tnUsuario, $taDatos['Motivo'] ?? null);
 
         return $laNuevo;
@@ -156,6 +197,8 @@ class MaquinaService
                 'Marca',
                 'Modelo',
                 'IdentificadorConexion',
+                'TipoInternet',
+                'ConsumoKwhMensual',
                 'UbicacionActual',
                 'FilasMatriz',
                 'ColumnasMatriz',
@@ -178,9 +221,8 @@ class MaquinaService
 
             DB::connection($this->pcConexion)->table('MAQUINA')->where('Maquina', $tnMaquina)->update($laUpdate);
 
-            $loNuevo = DB::connection($this->pcConexion)->table('MAQUINA')->where('Maquina', $tnMaquina)->first();
             $laAntes = $this->normalizarFila($loActual);
-            $laDespues = $this->normalizarFila($loNuevo);
+            $laDespues = $this->Obtener($tnMaquina) ?? [];
             $this->toAuditoria->registrar('MAQUINA', $tnMaquina, 'ACTUALIZAR', $laAntes, $laDespues, $tnUsuario, $taDatos['Motivo'] ?? null);
 
             return ['Estado' => 'OK', 'Datos' => $laDespues];
@@ -265,6 +307,7 @@ class MaquinaService
 
             $tnEstadoActivo = $this->toEstadoCatalogo->obtenerId('GENERAL', 1);
             $tdAhora = now();
+            $tnEmpresa = $this->obtenerEmpresaDeMaquina($tnMaquina);
 
             $tnActual = (int)DB::connection($this->pcConexion)
                 ->table('MAQUINAIMAGEN')
@@ -315,8 +358,8 @@ class MaquinaService
             }
 
             foreach ($laArchivos as $toArchivo) {
-                $tcNombre = 'maquina_' . $tnMaquina . '_' . now()->format('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $toArchivo->getClientOriginalExtension();
-                $tcRuta = $toArchivo->storeAs('maquina/imagenes', $tcNombre, 'public');
+                $laArchivo = $this->toArchivoStorage->subirArchivo($toArchivo, 'maquina', $tnEmpresa, 'maquina', $tnMaquina);
+                $tcRuta = (string)$laArchivo['RutaObjeto'];
 
                 $tnId = (int)DB::connection($this->pcConexion)->table('MAQUINAIMAGEN')->insertGetId([
                     'Maquina' => $tnMaquina,
@@ -456,7 +499,7 @@ class MaquinaService
             return $tcRuta;
         }
 
-        return Storage::disk('public')->url($tcRuta);
+        return $this->toArchivoStorage->resolverUrl($tcRuta);
     }
 
     public function EliminarLogico(int $tnMaquina, string $tcVersion, int $tnUsuario, ?string $tcMotivo): array
@@ -480,9 +523,8 @@ class MaquinaService
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
 
-            $loNuevo = DB::connection($this->pcConexion)->table('MAQUINA')->where('Maquina', $tnMaquina)->first();
             $laAntes = $this->normalizarFila($loActual);
-            $laDespues = $this->normalizarFila($loNuevo);
+            $laDespues = $this->Obtener($tnMaquina) ?? [];
             $this->toAuditoria->registrar('MAQUINA', $tnMaquina, 'ELIMINAR_LOGICO', $laAntes, $laDespues, $tnUsuario, $tcMotivo);
 
             return ['Estado' => 'OK', 'Datos' => $laDespues];
@@ -494,5 +536,26 @@ class MaquinaService
         $la = (array)$toFila;
         $la['Version'] = $this->toControlVersion->versionDesdeFila($toFila);
         return $la;
+    }
+
+    private function obtenerTipoInternetPorCodigo(string $tcCodigo): ?int
+    {
+        $tnTipoInternet = DB::connection($this->pcConexion)
+            ->table('TIPOINTERNET')
+            ->where('CodigoTipoInternet', $tcCodigo)
+            ->value('TipoInternet');
+
+        return $tnTipoInternet !== null ? (int)$tnTipoInternet : null;
+    }
+
+    private function obtenerEmpresaDeMaquina(int $tnMaquina): int
+    {
+        $tnEmpresa = DB::connection($this->pcConexion)
+            ->table('MAQUINA as m')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->where('m.Maquina', $tnMaquina)
+            ->value('u.Empresa');
+
+        return $tnEmpresa !== null ? (int)$tnEmpresa : 0;
     }
 }

@@ -3,11 +3,11 @@
 namespace App\Modulos\Reporte\Services;
 
 use App\Jobs\ProcesarReporteGeneradoJob;
+use App\Soporte\ArchivoStorageService;
 use App\Soporte\AuditoriaService;
 use App\Soporte\EstadoNegocioService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ReporteService
 {
@@ -15,7 +15,8 @@ class ReporteService
 
     public function __construct(
         private EstadoNegocioService $toEstadoNegocio,
-        private AuditoriaService $toAuditoria
+        private AuditoriaService $toAuditoria,
+        private ArchivoStorageService $toArchivoStorage
     ) {
     }
 
@@ -134,6 +135,7 @@ class ReporteService
         return [
             'Estado' => 'OK',
             'Ruta' => (string)$la['Archivo']['RutaArchivo'],
+            'Disco' => $this->toArchivoStorage->obtenerDiscoRuta((string)$la['Archivo']['RutaArchivo']),
             'Nombre' => (string)$la['Archivo']['NombreArchivo'],
             'Mime' => (string)($la['Archivo']['MimeArchivo'] ?? 'application/octet-stream'),
         ];
@@ -245,8 +247,8 @@ class ReporteService
                 ->get();
 
             foreach ($laArchivos as $toArchivo) {
-                if (!empty($toArchivo->RutaArchivo) && Storage::disk('public')->exists((string)$toArchivo->RutaArchivo)) {
-                    Storage::disk('public')->delete((string)$toArchivo->RutaArchivo);
+                if (!empty($toArchivo->RutaArchivo)) {
+                    $this->toArchivoStorage->eliminar((string)$toArchivo->RutaArchivo);
                 }
             }
 

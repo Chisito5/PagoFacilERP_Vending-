@@ -2,13 +2,13 @@
 
 namespace App\Modulos\Merma\Services;
 
+use App\Soporte\ArchivoStorageService;
 use App\Soporte\AuditoriaService;
 use App\Soporte\ControlVersionService;
 use App\Soporte\EstadoNegocioService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class MermaService
 {
@@ -17,7 +17,8 @@ class MermaService
     public function __construct(
         private EstadoNegocioService $toEstadoNegocio,
         private ControlVersionService $toControlVersion,
-        private AuditoriaService $toAuditoria
+        private AuditoriaService $toAuditoria,
+        private ArchivoStorageService $toArchivoStorage
     ) {
     }
 
@@ -195,8 +196,9 @@ class MermaService
 
     public function subirEvidencia(int $tnMerma, UploadedFile $toArchivo, int $tnUsuarioSesion, ?string $tcMotivo): array
     {
-        $tcNombre = 'merma_' . $tnMerma . '_' . now()->format('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $toArchivo->getClientOriginalExtension();
-        $tcRuta = $toArchivo->storeAs('merma/evidencia', $tcNombre, 'public');
+        $tnEmpresa = $this->obtenerEmpresaPorMerma($tnMerma);
+        $laArchivo = $this->toArchivoStorage->subirArchivo($toArchivo, 'merma', $tnEmpresa, 'merma', $tnMerma);
+        $tcRuta = (string)$laArchivo['RutaObjeto'];
         $tdAhora = now();
 
         $tnId = DB::connection($this->pcConexion)->table('MERMAEVIDENCIA')->insertGetId([
@@ -212,7 +214,7 @@ class MermaService
         ]);
 
         $la = (array)DB::connection($this->pcConexion)->table('MERMAEVIDENCIA')->where('MermaEvidencia', $tnId)->first();
-        $la['UrlArchivo'] = Storage::disk('public')->url((string)$la['RutaArchivo']);
+        $la['UrlArchivo'] = $this->toArchivoStorage->resolverUrl((string)$la['RutaArchivo']);
         $this->toAuditoria->registrar('MERMAEVIDENCIA', $tnId, 'CREAR', null, $la, $tnUsuarioSesion, $tcMotivo);
 
         return $la;
@@ -229,7 +231,7 @@ class MermaService
             ->map(function ($toFila) {
                 $la = (array)$toFila;
                 $la['Version'] = $this->toControlVersion->versionDesdeFila($toFila);
-                $la['UrlArchivo'] = Storage::disk('public')->url((string)$la['RutaArchivo']);
+                $la['UrlArchivo'] = $this->toArchivoStorage->resolverUrl((string)$la['RutaArchivo']);
                 return $la;
             })
             ->all();
@@ -410,5 +412,17 @@ class MermaService
             'UsrFecha' => $tdAhora->toDateString(),
             'UsrHora' => $tdAhora->format('H:i:s'),
         ]);
+    }
+
+    private function obtenerEmpresaPorMerma(int $tnMerma): int
+    {
+        $tnEmpresa = DB::connection($this->pcConexion)
+            ->table('MERMA as me')
+            ->leftJoin('MAQUINA as m', 'm.Maquina', '=', 'me.Maquina')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->where('me.Merma', $tnMerma)
+            ->value('u.Empresa');
+
+        return $tnEmpresa !== null ? (int)$tnEmpresa : 0;
     }
 }

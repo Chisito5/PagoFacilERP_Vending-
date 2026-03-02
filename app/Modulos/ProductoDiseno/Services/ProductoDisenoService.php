@@ -2,13 +2,12 @@
 
 namespace App\Modulos\ProductoDiseno\Services;
 
+use App\Soporte\ArchivoStorageService;
 use App\Soporte\AuditoriaService;
 use App\Soporte\ControlVersionService;
 use App\Support\EstadoCatalogo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 class ProductoDisenoService
@@ -18,7 +17,8 @@ class ProductoDisenoService
     public function __construct(
         private EstadoCatalogo $toEstadoCatalogo,
         private ControlVersionService $toControlVersion,
-        private AuditoriaService $toAuditoria
+        private AuditoriaService $toAuditoria,
+        private ArchivoStorageService $toArchivoStorage
     ) {
     }
 
@@ -311,7 +311,7 @@ class ProductoDisenoService
                     'TipoImagen' => (string)($toFila->NombreTipoImagen ?? ''),
                     'TipoImagenId' => (int)$toFila->TipoImagen,
                     'RutaImagen' => (string)$toFila->RutaImagen,
-                    'Url' => (string)$toFila->RutaImagen,
+                    'Url' => $this->toArchivoStorage->resolverUrl((string)$toFila->RutaImagen),
                     'Orden' => (int)$toFila->Orden,
                     'Estado' => (int)$toFila->Estado,
                     'Version' => $this->toControlVersion->versionDesdeFila($toFila),
@@ -341,6 +341,7 @@ class ProductoDisenoService
 
             $tnEstadoActivo = $this->obtenerEstado('GENERAL', 1, 1);
             $tdAhora = now();
+            $tnEmpresa = (int)($loProducto->Empresa ?? 0);
 
             $tnOrdenBase = (int)(DB::connection($this->pcConexion)
                 ->table('PRODUCTOIMAGEN')
@@ -375,15 +376,14 @@ class ProductoDisenoService
             foreach ($laArchivos as $toArchivo) {
                 $tcTipo = 'DETALLE';
                 $tnTipoImagen = $this->obtenerTipoImagenPorNombre($tcTipo);
-                $tcNombre = Str::uuid()->toString() . '_' . preg_replace('/[^A-Za-z0-9_\\.-]/', '_', $toArchivo->getClientOriginalName());
-                $tcRuta = $toArchivo->storeAs('productos/' . $tnProducto, $tcNombre, 'public');
-                $tcUrl = Storage::disk('public')->url($tcRuta);
+                $laArchivo = $this->toArchivoStorage->subirArchivo($toArchivo, 'producto', $tnEmpresa, 'producto', $tnProducto);
+                $tcRuta = (string)$laArchivo['RutaObjeto'];
                 $tnOrden = $tnOrdenBase + $tnPos;
 
                 $tnId = (int)DB::connection($this->pcConexion)->table('PRODUCTOIMAGEN')->insertGetId([
                     'Producto' => $tnProducto,
                     'TipoImagen' => $tnTipoImagen,
-                    'RutaImagen' => $tcUrl,
+                    'RutaImagen' => $tcRuta,
                     'Orden' => $tnOrden,
                     'Estado' => $tnEstadoActivo,
                     'Usr' => $tnUsuarioSesion,

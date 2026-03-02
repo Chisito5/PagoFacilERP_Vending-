@@ -10,7 +10,7 @@ use RuntimeException;
 
 class AutenticacionService
 {
-    private const MINUTOS_TOKEN_ACCESO = 15;
+    private const MINUTOS_TOKEN_ACCESO = 10;
     private const DIAS_TOKEN_REFRESCO = 7;
 
     private ?int $pnEstadoActivo = null;
