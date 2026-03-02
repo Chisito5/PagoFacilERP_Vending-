@@ -1,0 +1,535 @@
+﻿{
+    "info":  {
+                 "_postman_id":  "9f0e8e74-9ac6-4c95-9c5b-a53b7603f65c",
+                 "name":  "Reserva - Cierre Completo (7 Casos)",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "description":  "Coleccion para probar el ciclo completo de reservas: confirmar, cancelar e expirar.\\n\\nOrden sugerido:\\n1) Caso 1\\n2) Caso 2\\n3) Caso 3\\n4) Caso 4\\n5) Caso 5\\n6) Caso 6\\n7) Caso 7 (7.1 -\u003e esperar -\u003e php artisan reservas:expirar -\u003e 7.2)"
+             },
+    "item":  [
+                 {
+                     "name":  "Caso 1 - Reservar normal",
+                     "item":  [
+                                  {
+                                      "name":  "1.1 POST /api/reserva",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquina}},\n  \"CodigoSeleccion\": \"{{codigo_seleccion}}\",\n  \"Cantidad\": {{cantidad}},\n  \"ExpiraSegundos\": {{expira_segundos}}\n}"
+                                                               },
+                                                      "description":  "Debe crear reserva y mover stock a reservado."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Ok=true\u0027, function () {",
+                                                                                    "  pm.expect(json.Ok).to.eql(true);",
+                                                                                    "});",
+                                                                                    "pm.environment.set(\u0027reserva_id\u0027, json.Datos.Reserva);",
+                                                                                    "pm.environment.set(\u0027reserva_externa\u0027, json.Datos.ReservaExterna);",
+                                                                                    "pm.environment.set(\u0027celda_id\u0027, json.Datos.Celda);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 2 - Confirmar normal",
+                     "item":  [
+                                  {
+                                      "name":  "2.1 POST /api/reserva/confirmar",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva/confirmar",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva",
+                                                                               "confirmar"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reserva_id}}\n}"
+                                                               },
+                                                      "description":  "Debe confirmar reserva, registrar VENTA y bajar CantidadReservada."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Respuesta de confirmacion\u0027, function () {",
+                                                                                    "  pm.expect(json.Ok).to.eql(true);",
+                                                                                    "  pm.expect((json.Mensaje || \u0027\u0027).toLowerCase()).to.include(\u0027confirm\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 3 - Confirmar dos veces (idempotente)",
+                     "item":  [
+                                  {
+                                      "name":  "3.1 POST /api/reserva/confirmar (segunda vez)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva/confirmar",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva",
+                                                                               "confirmar"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reserva_id}}\n}"
+                                                               },
+                                                      "description":  "Debe responder 200 idempotente (ya confirmada) sin duplicar VENTA."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200 idempotente\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Mensaje ya confirmada\u0027, function () {",
+                                                                                    "  pm.expect((json.Mensaje || \u0027\u0027).toLowerCase()).to.include(\u0027ya confirm\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 4 - Reservar para cancelar",
+                     "item":  [
+                                  {
+                                      "name":  "4.1 POST /api/reserva",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquina}},\n  \"CodigoSeleccion\": \"{{codigo_seleccion}}\",\n  \"Cantidad\": {{cantidad}},\n  \"ExpiraSegundos\": {{expira_segundos}}\n}"
+                                                               },
+                                                      "description":  "Crea una reserva activa para probar cancelacion."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.environment.set(\u0027reserva_id_cancel\u0027, json.Datos.Reserva);",
+                                                                                    "pm.environment.set(\u0027reserva_externa_cancel\u0027, json.Datos.ReservaExterna);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 5 - Cancelar normal",
+                     "item":  [
+                                  {
+                                      "name":  "5.1 POST /api/reserva/cancelar",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva/cancelar",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva",
+                                                                               "cancelar"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reserva_id_cancel}},\n  \"Motivo\": \"Prueba Postman: usuario cancelo\"\n}"
+                                                               },
+                                                      "description":  "Debe liberar stock reservado y marcar cancelada."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Cancelacion exitosa\u0027, function () {",
+                                                                                    "  pm.expect(json.Ok).to.eql(true);",
+                                                                                    "  pm.expect((json.Mensaje || \u0027\u0027).toLowerCase()).to.include(\u0027cancel\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 6 - Cancelar confirmada (debe fallar)",
+                     "item":  [
+                                  {
+                                      "name":  "6.1 POST /api/reserva/cancelar sobre confirmada",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva/cancelar",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva",
+                                                                               "cancelar"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reserva_id}},\n  \"Motivo\": \"No deberia permitir cancelar confirmada\"\n}"
+                                                               },
+                                                      "description":  "Debe responder 409 porque la reserva del caso 1 ya fue confirmada."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 409\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(409);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Caso 7 - Expiracion automatica",
+                     "item":  [
+                                  {
+                                      "name":  "7.1 POST /api/reserva (expiracion corta)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquina}},\n  \"CodigoSeleccion\": \"{{codigo_seleccion}}\",\n  \"Cantidad\": {{cantidad}},\n  \"ExpiraSegundos\": {{expira_segundos_corto}}\n}"
+                                                               },
+                                                      "description":  "Crea reserva corta. Luego espera \u003e10s y ejecuta en terminal: php artisan reservas:expirar"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.environment.set(\u0027reserva_id_expira\u0027, json.Datos.Reserva);",
+                                                                                    "pm.environment.set(\u0027reserva_externa_expira\u0027, json.Datos.ReservaExterna);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "7.2 POST /api/reserva/confirmar (ya expirada)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Accept",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{clave_idempotencia}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/reserva/confirmar",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "reserva",
+                                                                               "confirmar"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reserva_id_expira}}\n}"
+                                                               },
+                                                      "description":  "Antes de enviar este request: esperar expiracion y ejecutar php artisan reservas:expirar. Debe responder 409."
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 409\u0027, function () {",
+                                                                                    "  pm.response.to.have.status(409);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ],
+    "event":  [
+                  {
+                      "listen":  "prerequest",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+
+                                              ]
+                                 }
+                  },
+                  {
+                      "listen":  "test",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+
+                                              ]
+                                 }
+                  }
+              ],
+    "variable":  [
+                     {
+                         "key":  "base_url",
+                         "value":  "http://127.0.0.1:8000"
+                     },
+                     {
+                         "key":  "maquina",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "codigo_seleccion",
+                         "value":  "A1"
+                     },
+                     {
+                         "key":  "cantidad",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "expira_segundos",
+                         "value":  "120"
+                     },
+                     {
+                         "key":  "expira_segundos_corto",
+                         "value":  "10"
+                     },
+                     {
+                         "key":  "reserva_id",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reserva_externa",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reserva_id_cancel",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reserva_externa_cancel",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reserva_id_expira",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "reserva_externa_expira",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "celda_id",
+                         "value":  ""
+                     }
+                 ]
+}

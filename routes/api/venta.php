@@ -5,8 +5,8 @@ use App\Modulos\Venta\Controllers\VentaController;
 
 
 Route::prefix('venta')->group(function () {
-    Route::post('/', [VentaController::class, 'Crear'])->middleware('idempotencia.requerida');              // procesar venta
-    Route::get('/', [VentaController::class, 'Listar']);              // listar ventas
-    Route::get('/maquina/{Maquina}', [VentaController::class, 'ListarPorMaquina']); // filtrar por maquina
+    Route::post('/', [VentaController::class, 'Crear'])->middleware('idempotencia.requerida');
+    Route::get('/', [VentaController::class, 'Listar']);
+    Route::get('/maquina/{tnMaquina}', [VentaController::class, 'ListarPorMaquina']);
     Route::post('/reversa', [VentaController::class, 'Reversar'])->middleware('idempotencia.requerida');
 });

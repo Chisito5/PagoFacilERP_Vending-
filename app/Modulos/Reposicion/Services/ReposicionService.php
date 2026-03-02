@@ -2,12 +2,18 @@
 
 namespace App\Modulos\Reposicion\Services;
 
+use App\Events\EventoReposicionCreada;
+use App\Events\EventoStockActualizado;
+use App\Soporte\RespuestaApi;
 use App\Support\EstadoCatalogo;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use stdClass;
+use Throwable;
 
 class ReposicionService
 {
@@ -19,23 +25,64 @@ class ReposicionService
     {
     }
 
-    /**
-     * SYSCOOP
-     * category: Service
-     * package: App\Modulos\Reposicion\Services
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: int $tnMaquina
-     * param: string $tcCodigoSeleccion
-     * param: int $tnCantidad
-     * param: int $tnUsuarioOperador
-     * param: ?int $tnProductoEmpresa
-     * param: ?int $tnLote
-     * param: ?string $tcObservacion
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Recarga stock en base a (Maquina + CodigoSeleccion) y registra REPOSICION.
-     */
+    public function PrevalidarPorSeleccion(
+        int $tnMaquina,
+        string $tcCodigoSeleccion,
+        int $tnCantidad,
+        int $tnUsuarioOperador,
+        ?int $tnProductoEmpresa = null,
+        ?int $tnLote = null
+    ): JsonResponse {
+        return DB::connection('mysqlNegocio')->transaction(function () use (
+            $tnMaquina,
+            $tcCodigoSeleccion,
+            $tnCantidad,
+            $tnUsuarioOperador,
+            $tnProductoEmpresa,
+            $tnLote
+        ) {
+            $mxEvaluacion = $this->evaluarReposicion(
+                $tnMaquina,
+                $tcCodigoSeleccion,
+                $tnCantidad,
+                $tnUsuarioOperador,
+                $tnProductoEmpresa,
+                $tnLote
+            );
+
+            if ($mxEvaluacion instanceof JsonResponse) {
+                return $mxEvaluacion;
+            }
+
+            /** @var array<string,mixed> $laContexto */
+            $laContexto = $mxEvaluacion;
+            /** @var stdClass $loExistencia */
+            $loExistencia = $laContexto['existencia'];
+            /** @var stdClass $loCelda */
+            $loCelda = $laContexto['celda'];
+            /** @var stdClass $loLote */
+            $loLote = $laContexto['lote'];
+
+            $tnDisponibleActual = (int)$loExistencia->CantidadDisponible;
+            $tnReservadaActual = (int)$loExistencia->CantidadReservada;
+            $tnDisponibleNuevo = $tnDisponibleActual + $tnCantidad;
+
+            return RespuestaApi::exito('Prevalidacion de reposicion correcta', [
+                'Maquina' => $tnMaquina,
+                'Celda' => (int)$loCelda->Celda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'ProductoEmpresa' => (int)$laContexto['producto_empresa'],
+                'Lote' => (int)$laContexto['lote_final'],
+                'CantidadAgregada' => $tnCantidad,
+                'CantidadDisponibleActual' => $tnDisponibleActual,
+                'CantidadReservadaActual' => $tnReservadaActual,
+                'CantidadDisponibleProyectada' => $tnDisponibleNuevo,
+                'CapacidadMaximaCelda' => (int)$loCelda->CapacidadMaxima,
+                'CapacidadLote' => (int)$loLote->CantidadInicial,
+            ]);
+        });
+    }
+
     public function RecargarPorSeleccion(
         int $tnMaquina,
         string $tcCodigoSeleccion,
@@ -44,7 +91,7 @@ class ReposicionService
         ?int $tnProductoEmpresa = null,
         ?int $tnLote = null,
         ?string $tcObservacion = null
-    ) {
+    ): JsonResponse {
         return DB::connection('mysqlNegocio')->transaction(function () use (
             $tnMaquina,
             $tcCodigoSeleccion,
@@ -54,122 +101,31 @@ class ReposicionService
             $tnLote,
             $tcObservacion
         ) {
-            try {
-                $tnEstadoGeneralActivo = $this->toEstadoCatalogo->obtenerId('GENERAL', self::CODIGO_GENERAL_ACTIVO);
-                $tnEstadoReposicionRegistrada = $this->toEstadoCatalogo->obtenerId('REPOSICION', self::CODIGO_REPOSICION_REGISTRADA);
-            } catch (RuntimeException $toEx) {
-                return response()->json(['Ok' => false, 'Mensaje' => $toEx->getMessage()], 500);
-            }
-
-            $loUsuarioOperador = DB::connection('mysqlNegocio')
-                ->table('USUARIO')
-                ->where('Usuario', $tnUsuarioOperador)
-                ->where('Estado', $tnEstadoGeneralActivo)
-                ->first();
-
-            if (!$loUsuarioOperador) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'UsuarioOperador no existe o esta inactivo'
-                ], 400);
-            }
-
-            $loCelda = $this->obtenerCeldaPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnEstadoGeneralActivo);
-            if (!$loCelda) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'La celda no existe para esta maquina o esta inactiva'
-                ], 400);
-            }
-
-            $tnCelda = (int)$loCelda->Celda;
-            $loExistencia = $this->obtenerExistenciaConLock($tnCelda, $tnEstadoGeneralActivo);
-            if (!$loExistencia) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'No existe existencia configurada para esta celda'
-                ], 400);
-            }
-
-            $tnProductoEmpresaFinal = $tnProductoEmpresa !== null ? $tnProductoEmpresa : (int)$loExistencia->ProductoEmpresa;
-            $tnLoteFinal = $tnLote !== null ? $tnLote : (isset($loExistencia->Lote) ? (int)$loExistencia->Lote : null);
-
-            if ($tnLoteFinal === null || $tnLoteFinal <= 0) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'Lote requerido para control de integridad'
-                ], 400);
-            }
-
-            $loLote = $this->obtenerLoteConLock($tnLoteFinal, $tnEstadoGeneralActivo);
-            if (!$loLote) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'Lote no encontrado o inactivo'
-                ], 400);
-            }
-
-            if (!$this->validarLoteCorrespondeProductoEmpresa($tnLoteFinal, $tnProductoEmpresaFinal)) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'El lote no corresponde al ProductoEmpresa indicado'
-                ], 409);
-            }
-
-            $tnCapacidadMaxima = (int)$loCelda->CapacidadMaxima;
-            $tnOcupadoActual = (int)$loExistencia->CantidadDisponible + (int)$loExistencia->CantidadReservada;
-            $tnOcupadoNuevoCelda = $tnOcupadoActual + $tnCantidad;
-
-            if (!$this->validarCapacidadCelda($tnCapacidadMaxima, $tnOcupadoNuevoCelda)) {
-                Log::warning('reposicion_conflicts_capacidad', [
-                    'Maquina' => $tnMaquina,
-                    'Celda' => $tnCelda,
-                    'CapacidadMaxima' => $tnCapacidadMaxima,
-                    'OcupadoActual' => $tnOcupadoActual,
-                    'CantidadAgregada' => $tnCantidad,
-                    'OcupadoNuevo' => $tnOcupadoNuevoCelda,
-                ]);
-
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'Capacidad excedida'
-                ], 409);
-            }
-
-            $tnOcupadoFilaActual = (int)$loExistencia->CantidadDisponible + (int)$loExistencia->CantidadReservada;
-            $tnOcupadoFilaNuevo = $tnOcupadoFilaActual + $tnCantidad;
-
-            $tnCantidadInicialLote = (int)$loLote->CantidadInicial;
-            if ($tnCantidadInicialLote <= 0) {
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'Lote sin capacidad definida'
-                ], 400);
-            }
-
-            $lbLoteValido = $this->validarCapacidadLote(
-                isset($loExistencia->Lote) ? (int)$loExistencia->Lote : null,
-                $tnLoteFinal,
-                $tnOcupadoFilaActual,
-                $tnOcupadoFilaNuevo,
-                $tnCantidadInicialLote
+            $mxEvaluacion = $this->evaluarReposicion(
+                $tnMaquina,
+                $tcCodigoSeleccion,
+                $tnCantidad,
+                $tnUsuarioOperador,
+                $tnProductoEmpresa,
+                $tnLote
             );
 
-            if (!$lbLoteValido) {
-                Log::warning('reposicion_conflicts_lote', [
-                    'Lote' => $tnLoteFinal,
-                    'CantidadInicial' => $tnCantidadInicialLote,
-                    'ExistenciaCelda' => (int)$loExistencia->ExistenciaCelda,
-                    'OcupadoFilaActual' => $tnOcupadoFilaActual,
-                    'OcupadoFilaNuevo' => $tnOcupadoFilaNuevo,
-                ]);
-
-                return response()->json([
-                    'Ok' => false,
-                    'Mensaje' => 'Lote insuficiente'
-                ], 409);
+            if ($mxEvaluacion instanceof JsonResponse) {
+                return $mxEvaluacion;
             }
 
+            /** @var array<string,mixed> $laContexto */
+            $laContexto = $mxEvaluacion;
+            /** @var stdClass $loExistencia */
+            $loExistencia = $laContexto['existencia'];
+            /** @var stdClass $loCelda */
+            $loCelda = $laContexto['celda'];
+
+            $tnEstadoReposicionRegistrada = (int)$laContexto['estado_reposicion_registrada'];
+            $tnEstadoGeneralActivo = (int)$laContexto['estado_general_activo'];
+            $tnCelda = (int)$loCelda->Celda;
+            $tnProductoEmpresaFinal = (int)$laContexto['producto_empresa'];
+            $tnLoteFinal = (int)$laContexto['lote_final'];
             $tnNuevaCantidad = (int)$loExistencia->CantidadDisponible + $tnCantidad;
 
             DB::connection('mysqlNegocio')
@@ -182,7 +138,7 @@ class ReposicionService
                 ]);
 
             $tdAhora = now();
-            $tnReposicion = DB::connection('mysqlNegocio')
+            $tnReposicion = (int)DB::connection('mysqlNegocio')
                 ->table('REPOSICION')
                 ->insertGetId([
                     'Maquina' => $tnMaquina,
@@ -224,108 +180,224 @@ class ReposicionService
                 $tnEstadoGeneralActivo
             );
 
-            return response()->json([
-                'Ok' => true,
-                'Mensaje' => 'Stock recargado correctamente',
-                'Datos' => [
-                    'Reposicion' => $tnReposicion,
-                    'Maquina' => $tnMaquina,
-                    'Celda' => $tnCelda,
-                    'CodigoSeleccion' => $tcCodigoSeleccion,
-                    'ExistenciaCelda' => (int)$loExistencia->ExistenciaCelda,
-                    'ProductoEmpresa' => $tnProductoEmpresaFinal,
-                    'Lote' => $tnLoteFinal,
-                    'CantidadAgregada' => $tnCantidad,
-                    'CantidadDisponible' => $tnNuevaCantidad,
-                    'CapacidadMaximaCelda' => $tnCapacidadMaxima,
-                    'CapacidadLote' => $tnCantidadInicialLote,
-                ]
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina($tnMaquina);
+            $this->emitirEventoSeguro(new EventoReposicionCreada($tnMaquina, $tnEmpresa, [
+                'Reposicion' => $tnReposicion,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'CantidadAgregada' => $tnCantidad,
+            ]), 'reposicion.creada');
+            $this->emitirEventoSeguro(new EventoStockActualizado($tnMaquina, $tnEmpresa, [
+                'Origen' => 'reposicion',
+                'Reposicion' => $tnReposicion,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'CantidadDisponible' => $tnNuevaCantidad,
+                'CantidadReservada' => (int)$loExistencia->CantidadReservada,
+            ]), 'stock.actualizado.reposicion');
+
+            return RespuestaApi::exito('Stock recargado correctamente', [
+                'Reposicion' => $tnReposicion,
+                'Maquina' => $tnMaquina,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'ExistenciaCelda' => (int)$loExistencia->ExistenciaCelda,
+                'ProductoEmpresa' => $tnProductoEmpresaFinal,
+                'Lote' => $tnLoteFinal,
+                'CantidadAgregada' => $tnCantidad,
+                'CantidadDisponible' => $tnNuevaCantidad,
+                'CapacidadMaximaCelda' => (int)$loCelda->CapacidadMaxima,
+                'CapacidadLote' => (int)$laContexto['capacidad_lote'],
             ]);
         });
     }
 
-    /**
-     * SYSCOOP
-     * category: Service
-     * package: App\Modulos\Reposicion\Services
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Lista reposiciones (ultimas primero).
-     */
-    public function Listar()
+    public function Listar(int $tnPagina = 1, int $tnTamanoPagina = 20): LengthAwarePaginator
     {
-        $loDatos = DB::connection('mysqlNegocio')
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+
+        return DB::connection('mysqlNegocio')
             ->table('REPOSICION')
             ->orderByDesc('Reposicion')
-            ->limit(200)
-            ->get();
-
-        return response()->json([
-            'Ok' => true,
-            'Mensaje' => 'Listado de reposiciones',
-            'Datos' => $loDatos
-        ]);
+            ->paginate($tnTamanoPagina, ['*'], 'Pagina', max(1, $tnPagina));
     }
 
-    /**
-     * SYSCOOP
-     * category: Service
-     * package: App\Modulos\Reposicion\Services
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: int $tnMaquina
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Lista reposiciones por maquina.
-     */
-    public function ListarPorMaquina(int $tnMaquina)
+    public function ListarPorMaquina(int $tnMaquina, int $tnPagina = 1, int $tnTamanoPagina = 20): LengthAwarePaginator
     {
-        $loDatos = DB::connection('mysqlNegocio')
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+
+        return DB::connection('mysqlNegocio')
             ->table('REPOSICION')
             ->where('Maquina', $tnMaquina)
             ->orderByDesc('Reposicion')
-            ->limit(200)
-            ->get();
-
-        return response()->json([
-            'Ok' => true,
-            'Mensaje' => 'Listado de reposiciones por maquina',
-            'Datos' => $loDatos
-        ]);
+            ->paginate($tnTamanoPagina, ['*'], 'Pagina', max(1, $tnPagina));
     }
 
     /**
-     * SYSCOOP
-     * category: Service
-     * package: App\Modulos\Reposicion\Services
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: int $tnReposicion
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Obtiene una reposicion por ID.
+     * @return array<string,mixed>|null
      */
-    public function Obtener(int $tnReposicion)
+    public function Obtener(int $tnReposicion): ?array
     {
-        $loDato = DB::connection('mysqlNegocio')
+        $loCabecera = DB::connection('mysqlNegocio')
             ->table('REPOSICION')
             ->where('Reposicion', $tnReposicion)
             ->first();
 
-        if (!$loDato) {
-            return response()->json([
-                'Ok' => false,
-                'Mensaje' => 'Reposicion no encontrada'
-            ], 404);
+        if (!$loCabecera) {
+            return null;
         }
 
-        return response()->json([
-            'Ok' => true,
-            'Mensaje' => 'Reposicion encontrada',
-            'Datos' => $loDato
-        ]);
+        $laDetalle = DB::connection('mysqlNegocio')
+            ->table('REPOSICIONDETALLE')
+            ->where('Reposicion', $tnReposicion)
+            ->orderBy('ReposicionDetalle')
+            ->get()
+            ->all();
+
+        $laMovimientos = DB::connection('mysqlNegocio')
+            ->table('MOVIMIENTOINVENTARIO')
+            ->where('Reposicion', $tnReposicion)
+            ->orderBy('MovimientoInventario')
+            ->get()
+            ->all();
+
+        return [
+            'Cabecera' => $loCabecera,
+            'Detalle' => $laDetalle,
+            'Auditoria' => [
+                'MovimientosInventario' => $laMovimientos
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>|JsonResponse
+     */
+    private function evaluarReposicion(
+        int $tnMaquina,
+        string $tcCodigoSeleccion,
+        int $tnCantidad,
+        int $tnUsuarioOperador,
+        ?int $tnProductoEmpresa,
+        ?int $tnLote
+    ) {
+        try {
+            $tnEstadoGeneralActivo = $this->toEstadoCatalogo->obtenerId('GENERAL', self::CODIGO_GENERAL_ACTIVO);
+            $tnEstadoReposicionRegistrada = $this->toEstadoCatalogo->obtenerId('REPOSICION', self::CODIGO_REPOSICION_REGISTRADA);
+        } catch (RuntimeException $toEx) {
+            return RespuestaApi::error($toEx->getMessage(), 500);
+        }
+
+        $loUsuarioOperador = DB::connection('mysqlNegocio')
+            ->table('USUARIO')
+            ->where('Usuario', $tnUsuarioOperador)
+            ->where('Estado', $tnEstadoGeneralActivo)
+            ->first();
+
+        if (!$loUsuarioOperador) {
+            return RespuestaApi::error('UsuarioOperador no existe o esta inactivo', 400, [
+                ['Codigo' => 'REPO_001', 'Campo' => 'UsuarioOperador', 'Detalle' => 'Usuario operador invalido']
+            ]);
+        }
+
+        $loCelda = $this->obtenerCeldaPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnEstadoGeneralActivo);
+        if (!$loCelda) {
+            return RespuestaApi::error('La celda no existe para esta maquina o esta inactiva', 400, [
+                ['Codigo' => 'REPO_002', 'Campo' => 'CodigoSeleccion', 'Detalle' => 'Celda no encontrada']
+            ]);
+        }
+
+        $tnCelda = (int)$loCelda->Celda;
+        $loExistencia = $this->obtenerExistenciaConLock($tnCelda, $tnEstadoGeneralActivo);
+        if (!$loExistencia) {
+            return RespuestaApi::error('No existe existencia configurada para esta celda', 400, [
+                ['Codigo' => 'REPO_003', 'Campo' => 'Celda', 'Detalle' => 'No existe stock configurado']
+            ]);
+        }
+
+        $tnProductoEmpresaFinal = $tnProductoEmpresa !== null ? $tnProductoEmpresa : (int)$loExistencia->ProductoEmpresa;
+        $tnLoteFinal = $tnLote !== null ? $tnLote : (isset($loExistencia->Lote) ? (int)$loExistencia->Lote : null);
+
+        if ($tnLoteFinal === null || $tnLoteFinal <= 0) {
+            return RespuestaApi::error('Lote requerido para control de integridad', 400, [
+                ['Codigo' => 'REPO_004', 'Campo' => 'Lote', 'Detalle' => 'Debe indicar Lote valido']
+            ]);
+        }
+
+        $loLote = $this->obtenerLoteConLock($tnLoteFinal, $tnEstadoGeneralActivo);
+        if (!$loLote) {
+            return RespuestaApi::error('Lote no encontrado o inactivo', 400, [
+                ['Codigo' => 'REPO_005', 'Campo' => 'Lote', 'Detalle' => 'Lote inexistente']
+            ]);
+        }
+
+        if (!$this->validarLoteCorrespondeProductoEmpresa($tnLoteFinal, $tnProductoEmpresaFinal)) {
+            return RespuestaApi::error('El lote no corresponde al ProductoEmpresa indicado', 409, [
+                ['Codigo' => 'REPO_006', 'Campo' => 'Lote', 'Detalle' => 'Producto/lote no coincide']
+            ]);
+        }
+
+        $tnCapacidadMaxima = (int)$loCelda->CapacidadMaxima;
+        $tnOcupadoActual = (int)$loExistencia->CantidadDisponible + (int)$loExistencia->CantidadReservada;
+        $tnOcupadoNuevoCelda = $tnOcupadoActual + $tnCantidad;
+
+        if (!$this->validarCapacidadCelda($tnCapacidadMaxima, $tnOcupadoNuevoCelda)) {
+            Log::warning('reposicion_conflicts_capacidad', [
+                'Maquina' => $tnMaquina,
+                'Celda' => $tnCelda,
+                'CapacidadMaxima' => $tnCapacidadMaxima,
+                'OcupadoActual' => $tnOcupadoActual,
+                'CantidadAgregada' => $tnCantidad,
+                'OcupadoNuevo' => $tnOcupadoNuevoCelda,
+            ]);
+
+            return RespuestaApi::error('Capacidad excedida', 409, [
+                ['Codigo' => 'REPO_007', 'Campo' => 'Cantidad', 'Detalle' => 'Supera la capacidad maxima de la celda']
+            ]);
+        }
+
+        $tnOcupadoFilaActual = (int)$loExistencia->CantidadDisponible + (int)$loExistencia->CantidadReservada;
+        $tnOcupadoFilaNuevo = $tnOcupadoFilaActual + $tnCantidad;
+        $tnCantidadInicialLote = (int)$loLote->CantidadInicial;
+
+        if ($tnCantidadInicialLote <= 0) {
+            return RespuestaApi::error('Lote sin capacidad definida', 400, [
+                ['Codigo' => 'REPO_008', 'Campo' => 'Lote', 'Detalle' => 'CantidadInicial del lote no configurada']
+            ]);
+        }
+
+        $lbLoteValido = $this->validarCapacidadLote(
+            isset($loExistencia->Lote) ? (int)$loExistencia->Lote : null,
+            $tnLoteFinal,
+            $tnOcupadoFilaActual,
+            $tnOcupadoFilaNuevo,
+            $tnCantidadInicialLote
+        );
+
+        if (!$lbLoteValido) {
+            Log::warning('reposicion_conflicts_lote', [
+                'Lote' => $tnLoteFinal,
+                'CantidadInicial' => $tnCantidadInicialLote,
+                'ExistenciaCelda' => (int)$loExistencia->ExistenciaCelda,
+                'OcupadoFilaActual' => $tnOcupadoFilaActual,
+                'OcupadoFilaNuevo' => $tnOcupadoFilaNuevo,
+            ]);
+
+            return RespuestaApi::error('Lote insuficiente', 409, [
+                ['Codigo' => 'REPO_009', 'Campo' => 'Lote', 'Detalle' => 'La reposicion supera la capacidad del lote']
+            ]);
+        }
+
+        return [
+            'estado_general_activo' => $tnEstadoGeneralActivo,
+            'estado_reposicion_registrada' => $tnEstadoReposicionRegistrada,
+            'celda' => $loCelda,
+            'existencia' => $loExistencia,
+            'lote' => $loLote,
+            'producto_empresa' => $tnProductoEmpresaFinal,
+            'lote_final' => $tnLoteFinal,
+            'capacidad_lote' => $tnCantidadInicialLote,
+        ];
     }
 
     private function obtenerCeldaPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion, int $tnEstadoGeneralActivo): ?stdClass
@@ -377,7 +449,7 @@ class ReposicionService
     ): bool {
         $laExistenciasLote = DB::connection('mysqlNegocio')
             ->table('EXISTENCIACELDA')
-            ->select('ExistenciaCelda', 'CantidadDisponible', 'CantidadReservada')
+            ->select('CantidadDisponible', 'CantidadReservada')
             ->where('Lote', $tnLote)
             ->lockForUpdate()
             ->get();
@@ -457,5 +529,34 @@ class ReposicionService
                 'UsrFecha' => $tdAhora->toDateString(),
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
+    }
+
+    private function obtenerEmpresaPorMaquina(int $tnMaquina): ?int
+    {
+        $loMaquina = DB::connection('mysqlNegocio')
+            ->table('MAQUINA as m')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->where('m.Maquina', $tnMaquina)
+            ->select('u.Empresa')
+            ->first();
+
+        if (!$loMaquina || !isset($loMaquina->Empresa)) {
+            return null;
+        }
+
+        return (int)$loMaquina->Empresa;
+    }
+
+    private function emitirEventoSeguro(object $toEvento, string $tcContexto): void
+    {
+        try {
+            event($toEvento);
+        } catch (Throwable $toEx) {
+            Log::warning('evento_tiempo_real_fallido', [
+                'contexto' => $tcContexto,
+                'modulo' => 'reposicion',
+                'error' => $toEx->getMessage(),
+            ]);
+        }
     }
 }

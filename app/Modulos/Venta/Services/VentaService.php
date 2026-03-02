@@ -2,9 +2,16 @@
 
 namespace App\Modulos\Venta\Services;
 
+use App\Events\EventoStockActualizado;
+use App\Events\EventoVentaCreada;
+use App\Events\EventoVentaReversada;
 use App\Support\EstadoCatalogo;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 class VentaService
 {
@@ -15,7 +22,7 @@ class VentaService
     {
     }
 
-    public function VenderPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion, int $tnCantidad)
+    public function VenderPorSeleccion(int $tnMaquina, string $tcCodigoSeleccion, int $tnCantidad): JsonResponse
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnMaquina, $tcCodigoSeleccion, $tnCantidad) {
             try {
@@ -76,18 +83,19 @@ class VentaService
                 return response()->json(['Ok' => false, 'Mensaje' => 'Stock insuficiente'], 400);
             }
 
+            $tnCantidadDisponibleNueva = (int)$loExistencia->CantidadDisponible - $tnCantidad;
+
             DB::connection('mysqlNegocio')
                 ->table('EXISTENCIACELDA')
                 ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
                 ->update([
-                    'CantidadDisponible' => (int)$loExistencia->CantidadDisponible - $tnCantidad
+                    'CantidadDisponible' => $tnCantidadDisponibleNueva
                 ]);
 
             $tdAhora = now();
-
-            DB::connection('mysqlNegocio')
+            $tnVenta = (int)DB::connection('mysqlNegocio')
                 ->table('VENTA')
-                ->insert([
+                ->insertGetId([
                     'Maquina' => $tnMaquina,
                     'Celda' => $tnCelda,
                     'ProductoEmpresa' => (int)$loExistencia->ProductoEmpresa,
@@ -101,10 +109,28 @@ class VentaService
                     'UsrHora' => $tdAhora->format('H:i:s')
                 ]);
 
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina($tnMaquina);
+            $this->emitirEventoSeguro(new EventoVentaCreada($tnMaquina, $tnEmpresa, [
+                'Venta' => $tnVenta,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'Cantidad' => $tnCantidad,
+                'PrecioUnitario' => $tnPrecioUnitario,
+            ]), 'venta.creada');
+            $this->emitirEventoSeguro(new EventoStockActualizado($tnMaquina, $tnEmpresa, [
+                'Origen' => 'venta',
+                'Venta' => $tnVenta,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'CantidadDisponible' => $tnCantidadDisponibleNueva,
+                'CantidadReservada' => (int)$loExistencia->CantidadReservada,
+            ]), 'stock.actualizado.venta');
+
             return response()->json([
                 'Ok' => true,
                 'Mensaje' => 'Venta procesada correctamente',
                 'Datos' => [
+                    'Venta' => $tnVenta,
                     'Maquina' => $tnMaquina,
                     'Celda' => $tnCelda,
                     'CodigoSeleccion' => $tcCodigoSeleccion,
@@ -115,30 +141,28 @@ class VentaService
         });
     }
 
-    public function Listar()
+    public function Listar(int $tnPagina = 1, int $tnTamanoPagina = 20): LengthAwarePaginator
     {
-        $loVentas = DB::connection('mysqlNegocio')
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+
+        return DB::connection('mysqlNegocio')
             ->table('VENTA')
             ->orderByDesc('Venta')
-            ->limit(200)
-            ->get();
-
-        return response()->json(['Ok' => true, 'Mensaje' => 'Listado de ventas', 'Datos' => $loVentas]);
+            ->paginate($tnTamanoPagina, ['*'], 'Pagina', max(1, $tnPagina));
     }
 
-    public function ListarPorMaquina(int $tnMaquina)
+    public function ListarPorMaquina(int $tnMaquina, int $tnPagina = 1, int $tnTamanoPagina = 20): LengthAwarePaginator
     {
-        $loVentas = DB::connection('mysqlNegocio')
+        $tnTamanoPagina = max(1, min($tnTamanoPagina, 200));
+
+        return DB::connection('mysqlNegocio')
             ->table('VENTA')
             ->where('Maquina', $tnMaquina)
             ->orderByDesc('Venta')
-            ->limit(200)
-            ->get();
-
-        return response()->json(['Ok' => true, 'Mensaje' => 'Listado de ventas por maquina', 'Datos' => $loVentas]);
+            ->paginate($tnTamanoPagina, ['*'], 'Pagina', max(1, $tnPagina));
     }
 
-    public function Reversar(int $tnVenta, string $tcMotivo)
+    public function Reversar(int $tnVenta, string $tcMotivo): JsonResponse
     {
         return DB::connection('mysqlNegocio')->transaction(function () use ($tnVenta, $tcMotivo) {
             try {
@@ -185,11 +209,13 @@ class VentaService
                 return response()->json(['Ok' => false, 'Mensaje' => 'No existe existencia para devolver stock'], 400);
             }
 
+            $tnCantidadDisponibleNueva = (int)$loExistencia->CantidadDisponible + $tnCantidad;
+
             DB::connection('mysqlNegocio')
                 ->table('EXISTENCIACELDA')
                 ->where('ExistenciaCelda', (int)$loExistencia->ExistenciaCelda)
                 ->update([
-                    'CantidadDisponible' => (int)$loExistencia->CantidadDisponible + $tnCantidad
+                    'CantidadDisponible' => $tnCantidadDisponibleNueva
                 ]);
 
             $tdAhora = now();
@@ -212,6 +238,21 @@ class VentaService
                     'Estado' => $tnEstadoVentaRevertida
                 ]);
 
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina((int)$loVenta->Maquina);
+            $this->emitirEventoSeguro(new EventoVentaReversada((int)$loVenta->Maquina, $tnEmpresa, [
+                'Venta' => $tnVenta,
+                'Motivo' => $tcMotivo,
+                'Celda' => $tnCelda,
+                'CantidadDevuelta' => $tnCantidad,
+            ]), 'venta.reversada');
+            $this->emitirEventoSeguro(new EventoStockActualizado((int)$loVenta->Maquina, $tnEmpresa, [
+                'Origen' => 'reversa',
+                'Venta' => $tnVenta,
+                'Celda' => $tnCelda,
+                'CantidadDisponible' => $tnCantidadDisponibleNueva,
+                'CantidadReservada' => (int)$loExistencia->CantidadReservada,
+            ]), 'stock.actualizado.reversa');
+
             return response()->json([
                 'Ok' => true,
                 'Mensaje' => 'Venta revertida correctamente',
@@ -222,5 +263,34 @@ class VentaService
                 ]
             ]);
         });
+    }
+
+    private function obtenerEmpresaPorMaquina(int $tnMaquina): ?int
+    {
+        $loMaquina = DB::connection('mysqlNegocio')
+            ->table('MAQUINA as m')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->where('m.Maquina', $tnMaquina)
+            ->select('u.Empresa')
+            ->first();
+
+        if (!$loMaquina || !isset($loMaquina->Empresa)) {
+            return null;
+        }
+
+        return (int)$loMaquina->Empresa;
+    }
+
+    private function emitirEventoSeguro(object $toEvento, string $tcContexto): void
+    {
+        try {
+            event($toEvento);
+        } catch (Throwable $toEx) {
+            Log::warning('evento_tiempo_real_fallido', [
+                'contexto' => $tcContexto,
+                'modulo' => 'venta',
+                'error' => $toEx->getMessage(),
+            ]);
+        }
     }
 }

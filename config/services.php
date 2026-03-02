@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'iot' => [
+        'clave_secreta' => env('IOT_CLAVE_SECRETA', ''),
+        'ventana_segundos' => (int)env('IOT_VENTANA_SEGUNDOS', 300),
+    ],
+
 ];

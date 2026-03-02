@@ -1,0 +1,1834 @@
+﻿{
+    "info":  {
+                 "name":  "API ERP Completa R1",
+                 "_postman_id":  "f1d58f08-41a2-4f7e-a263-4f8b40f80801",
+                 "description":  "Coleccion R1 por modulos: auth, jerarquia, catalogo, anuncio, merma, alerta, reportes, IoT, analitica y transaccionales.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "01 Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Usuario\": \"Vladimir\",\n  \"Clave\": \"Asadito7\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/login"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Refresh",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"RefreshToken\": \"{{refreshToken}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/refresh"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Me",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/me"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Permisos",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/permisos"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Logout",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/logout"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02 Usuario Jerarquico",
+                     "item":  [
+                                  {
+                                      "name":  "Listar Usuarios",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuario?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Crear Usuario",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"NombreUsuario\": \"operador01\",\n  \"Clave\": \"Temporal123\",\n  \"Persona\": 1,\n  \"Empresa\": 1,\n  \"Estado\": 1,\n  \"Rol\": [3],\n  \"Motivo\": \"Alta de operador\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuario"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Obtener Usuario",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuario/{{usuarioId}}"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Actualizar Roles Usuario",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{version}}\",\n  \"Rol\": [2,3],\n  \"Motivo\": \"Ajuste de perfil\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuario/{{usuarioId}}/rol"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Asignar Maquina a Usuario",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"Motivo\": \"Asignacion operativa\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuario/{{usuarioId}}/maquina"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03 Maquina Operativo",
+                     "item":  [
+                                  {
+                                      "name":  "Obtener Ubicacion Maquina",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/ubicacion"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Actualizar Ubicacion Maquina",
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{version}}\",\n  \"UbicacionActual\": 1,\n  \"Motivo\": \"Reubicacion\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/ubicacion"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Cambiar Estado Operativo",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"EstadoOperativo\": \"MANTENIMIENTO\",\n  \"Aprobacion\": {{aprobacionId}},\n  \"Motivo\": \"Mantenimiento preventivo\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/estado-operativo"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Historial Estado Operativo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/estado-operativo/historial?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Editar Maquina (PATCH)",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{version}}\",\n  \"FilasMatriz\": 6,\n  \"ColumnasMatriz\": 9,\n  \"Motivo\": \"Ajuste tecnico\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Listar Fotos Maquina",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/foto"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Subir Fotos Maquina (URLs)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/foto/lote-subir"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Fotos\": [\n    { \"Url\": \"https://picsum.photos/seed/maquina1/900/600\", \"TipoFoto\": \"FRENTE\", \"Orden\": 1 },\n    { \"Url\": \"https://picsum.photos/seed/maquina2/900/600\", \"TipoFoto\": \"LATERAL\", \"Orden\": 2 },\n    { \"Url\": \"https://picsum.photos/seed/maquina3/900/600\", \"TipoFoto\": \"INSTALACION\", \"Orden\": 3 }\n  ],\n  \"Motivo\": \"Registro de evidencia de instalacion\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Eliminar Foto Maquina",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/foto/{{maquinaFotoId}}"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{version}}\",\n  \"Motivo\": \"Depuracion de foto\"\n}"
+                                                               }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04 Catalogo Avanzado",
+                     "item":  [
+                                  {
+                                      "name":  "Listar Producto Familia",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productofamilia?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Crear Producto Familia",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"NombreProductoFamilia\": \"Bebidas\",\n  \"Estado\": 1,\n  \"Motivo\": \"Alta catalogo\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productofamilia"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Crear Producto Grupo",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"ProductoFamilia\": {{productoFamiliaId}},\n  \"NombreProductoGrupo\": \"Gaseosas\",\n  \"Estado\": 1,\n  \"Motivo\": \"Alta catalogo\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productogrupo"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Crear Producto Subgrupo",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"ProductoGrupo\": {{productoGrupoId}},\n  \"NombreSubgrupoProducto\": \"Cola\",\n  \"Estado\": 1,\n  \"Motivo\": \"Alta catalogo\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productosubgrupo"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Subir Imagen Producto",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "TipoImagen",
+                                                                                        "value":  "FRENTE",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "Archivo",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "Motivo",
+                                                                                        "value":  "Carga imagen frontal",
+                                                                                        "type":  "text"
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/imagen/subir"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "05 Anuncios",
+                     "item":  [
+                                  {
+                                      "name":  "Crear Anuncio",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Empresa\": 1,\n  \"AlcanceAnuncio\": 1,\n  \"Titulo\": \"Promo del dia\",\n  \"Descripcion\": \"2x1 en productos seleccionados\",\n  \"FechaHoraInicio\": \"2026-02-28 08:00:00\",\n  \"FechaHoraFin\": \"2026-03-15 23:59:59\",\n  \"Prioridad\": 1,\n  \"Estado\": 1,\n  \"Motivo\": \"Alta campana\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/anuncio"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Asignar Maquina a Anuncio",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"Motivo\": \"Segmentacion\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/anuncio/{{anuncioId}}/maquina"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Publicar Anuncio",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Aprobacion\": {{aprobacionId}},\n  \"Motivo\": \"Publicacion masiva\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/anuncio/{{anuncioId}}/publicar"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Detener Anuncio",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Aprobacion\": {{aprobacionId}},\n  \"Motivo\": \"Fin de campana\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/anuncio/{{anuncioId}}/detener"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "06 Mermas",
+                     "item":  [
+                                  {
+                                      "name":  "Crear Merma",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"Motivo\": \"Producto danado\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/merma"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Agregar Detalle Merma",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Celda\": {{celdaId}},\n  \"ProductoEmpresa\": {{productoEmpresaId}},\n  \"Lote\": {{loteId}},\n  \"CantidadRetirada\": 1,\n  \"Motivo\": \"Retiro por daÃƒÂ±o\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/merma/{{mermaId}}/detalle"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Subir Evidencia Merma",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "Archivo",
+                                                                                        "type":  "file",
+                                                                                        "src":  ""
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "Motivo",
+                                                                                        "value":  "Evidencia visual",
+                                                                                        "type":  "text"
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/merma/{{mermaId}}/evidencia/subir"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Aprobar Merma",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Aprobacion\": {{aprobacionId}},\n  \"Motivo\": \"Aprobacion supervisor\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/merma/{{mermaId}}/aprobar"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "07 Alertas",
+                     "item":  [
+                                  {
+                                      "name":  "Crear Regla Alerta",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Empresa\": 1,\n  \"TipoRegla\": \"STOCK_MINIMO\",\n  \"UmbralMinimo\": 2,\n  \"Prioridad\": 1,\n  \"MensajeRegla\": \"Stock bajo detectado\",\n  \"Estado\": 1,\n  \"Motivo\": \"Alta monitoreo\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reglaalerta"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Listar Alertas",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/alerta?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Atender Alerta",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Motivo\": \"Revisada por soporte\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/alerta/{{alertaId}}/atender"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Cerrar Alerta",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Motivo\": \"Caso resuelto\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/alerta/{{alertaId}}/cerrar"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "08 Reportes Async",
+                     "item":  [
+                                  {
+                                      "name":  "Generar Reporte",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"TipoReporte\": \"VENTAS\",\n  \"Formato\": \"CSV\",\n  \"Empresa\": 1,\n  \"Filtros\": {\n    \"FechaDesde\": \"2026-02-01\",\n    \"FechaHasta\": \"2026-02-28\"\n  }\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reporte/generar"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Listar Reportes",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reporte?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Obtener Reporte",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reporte/{{reporteId}}"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Descargar Reporte",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reporte/{{reporteId}}/descargar"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "09 Integracion IoT",
+                     "item":  [
+                                  {
+                                      "name":  "Webhook IoT (Publico)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-IoT-Origen",
+                                                                         "value":  "simulador-kiosko-01"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-IoT-EventId",
+                                                                         "value":  "{{iotEventId}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-IoT-Timestamp",
+                                                                         "value":  "{{iotTimestamp}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-IoT-Firma",
+                                                                         "value":  "{{iotFirma}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Evento\": \"dispositivo.ping\",\n  \"Maquina\": {{maquinaId}},\n  \"Datos\": {\n    \"Temperatura\": 4.2,\n    \"EstadoConexion\": \"OK\"\n  }\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/integracion/iot/webhook"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Listar Eventos IoT",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/integracion/iot/evento?Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Obtener Evento IoT",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/integracion/iot/evento/{{iotEventoId}}"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "10 Analitica",
+                     "item":  [
+                                  {
+                                      "name":  "Resumen",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/resumen?Empresa=1\u0026FechaDesde=2026-02-01\u0026FechaHasta=2026-02-28"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Ventas",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/ventas?Empresa=1\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Rotacion",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/rotacion?Empresa=1\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Stockout",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/stockout?Empresa=1\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Rentabilidad",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/rentabilidad?Empresa=1\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Mermas",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/analitica/mermas?Empresa=1\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "11 Flujos Transaccionales",
+                     "item":  [
+                                  {
+                                      "name":  "Reserva Crear (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 1,\n  \"ExpiraSegundos\": 120\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reserva"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reserva Confirmar (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reservaId}}\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reserva/confirmar"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reserva Cancelar (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Reserva\": {{reservaId}},\n  \"Motivo\": \"Cancelacion manual\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reserva/cancelar"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Venta Crear (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 1\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/venta"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Venta Reversa (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Venta\": {{ventaId}},\n  \"Motivo\": \"Prueba reversa\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/venta/reversa"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reposicion Prevalidar",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 2,\n  \"UsuarioOperador\": {{usuarioId}},\n  \"Lote\": {{loteId}}\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reposicion/prevalidar"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reposicion Crear (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Maquina\": {{maquinaId}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 2,\n  \"UsuarioOperador\": {{usuarioId}},\n  \"Lote\": {{loteId}},\n  \"Observacion\": \"Recarga operativa\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/reposicion"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "12 Tablero Ejecutivo",
+                     "item":  [
+                                  {
+                                      "name":  "Resumen Ejecutivo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/tablero/ejecutivo/resumen?Empresa={{empresaId}}\u0026FechaDesde={{fechaDesde}}\u0026FechaHasta={{fechaHasta}}"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Maquinas Ejecutivo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/tablero/ejecutivo/maquinas?Empresa={{empresaId}}\u0026Estado={{estadoId}}\u0026Busqueda=\u0026Pagina=1\u0026TamanoPagina=20\u0026Orden=ingresos\u0026FechaDesde={{fechaDesde}}\u0026FechaHasta={{fechaHasta}}"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Mapa Ejecutivo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/tablero/ejecutivo/mapa?Empresa={{empresaId}}\u0026Estado={{estadoId}}\u0026SoloConCoordenadas=1\u0026FechaDesde={{fechaDesde}}\u0026FechaHasta={{fechaHasta}}"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Ranking Ejecutivo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/tablero/ejecutivo/ranking?Empresa={{empresaId}}\u0026FechaDesde={{fechaDesde}}\u0026FechaHasta={{fechaHasta}}\u0026Top=10\u0026Por=ingresos"
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Detalle Maquina Ejecutivo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/tablero/ejecutivo/maquina/{{maquinaId}}/detalle?FechaDesde={{fechaDesde}}\u0026FechaHasta={{fechaHasta}}"
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "13 R2 Operativo",
+                     "item":  [
+                                  {
+                                      "name":  "Matriz Celdas (54)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/celdas/matriz?Pagina=1\u0026TamanoPagina=54"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Simular Ocupacion",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/celdas/simular-ocupacion"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"CeldaAncla\": {{celdaId}},\n  \"Producto\": {{productoId}},\n  \"Lote\": {{loteId}},\n  \"Cantidad\": 6,\n  \"SpanColumnas\": 2,\n  \"SpanFilas\": 1\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Asignar Producto (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/celdas/asignar-producto"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"CeldaAncla\": {{celdaId}},\n  \"Producto\": {{productoId}},\n  \"Lote\": {{loteId}},\n  \"Cantidad\": 6,\n  \"SpanColumnas\": 2,\n  \"SpanFilas\": 1,\n  \"Version\": \"{{version}}\",\n  \"Motivo\": \"Asignacion inicial R2\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Liberar Ocupacion (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/celdas/liberar"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"CeldaAncla\": {{celdaId}},\n  \"SpanColumnas\": 2,\n  \"SpanFilas\": 1,\n  \"Version\": \"{{version}}\",\n  \"Motivo\": \"Liberacion de prueba R2\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Conflictos de Celdas",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/maquina/{{maquinaId}}/celdas/conflictos?Pagina=1\u0026TamanoPagina=20"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Depositos",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito?Empresa={{empresaId}}\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Stock Deposito",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito/{{depositoId}}/stock?Pagina=1\u0026TamanoPagina=20"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Movimientos Deposito",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito/movimientos?Deposito={{depositoId}}\u0026Pagina=1\u0026TamanoPagina=20"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Entrada Deposito (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito/movimiento/entrada"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Deposito\": {{depositoId}},\n  \"Producto\": {{productoId}},\n  \"Lote\": {{loteId}},\n  \"Cantidad\": 10,\n  \"Motivo\": \"Entrada inicial R2\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Salida Deposito (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito/movimiento/salida"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Deposito\": {{depositoId}},\n  \"Producto\": {{productoId}},\n  \"Lote\": {{loteId}},\n  \"Cantidad\": 3,\n  \"Motivo\": \"Salida de prueba R2\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Transferir a Maquina (Idempotente)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Clave-Idempotencia",
+                                                                         "value":  "{{claveIdempotencia}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/deposito/transferir-a-maquina"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Deposito\": {{depositoId}},\n  \"Maquina\": {{maquinaId}},\n  \"Celda\": {{celdaId}},\n  \"Producto\": {{productoId}},\n  \"Lote\": {{loteId}},\n  \"Cantidad\": 5,\n  \"Motivo\": \"Transferencia R2\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Obtener Diseno Producto",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/diseno"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Crear Diseno Producto",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/diseno"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Lienzo\": { \"Ancho\": 900, \"Alto\": 500 },\n  \"Capas\": [\n    { \"Id\": \"fondo\", \"Tipo\": \"imagen\", \"Orden\": 1, \"X\": 0, \"Y\": 0, \"Ancho\": 900, \"Alto\": 500, \"Opacidad\": 1, \"Rotacion\": 0, \"Texto\": \"\", \"Color\": \"\", \"Fuente\": \"\", \"Recurso\": \"https://cdn.ejemplo/fondo.png\" },\n    { \"Id\": \"nombre\", \"Tipo\": \"texto\", \"Orden\": 2, \"X\": 80, \"Y\": 420, \"Ancho\": 740, \"Alto\": 60, \"Opacidad\": 1, \"Rotacion\": 0, \"Texto\": \"Producto ERP\", \"Color\": \"#111111\", \"Fuente\": \"Arial\", \"Recurso\": \"\" }\n  ],\n  \"Motivo\": \"Crear diseno inicial\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Actualizar Diseno Producto",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/diseno"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{disenoVersion}}\",\n  \"Lienzo\": { \"Ancho\": 1000, \"Alto\": 600 },\n  \"Capas\": [\n    { \"Id\": \"fondo\", \"Tipo\": \"imagen\", \"Orden\": 1, \"X\": 0, \"Y\": 0, \"Ancho\": 1000, \"Alto\": 600, \"Opacidad\": 1, \"Rotacion\": 0, \"Texto\": \"\", \"Color\": \"\", \"Fuente\": \"\", \"Recurso\": \"https://cdn.ejemplo/fondo-2.png\" },\n    { \"Id\": \"sello\", \"Tipo\": \"texto\", \"Orden\": 2, \"X\": 100, \"Y\": 500, \"Ancho\": 800, \"Alto\": 70, \"Opacidad\": 1, \"Rotacion\": 0, \"Texto\": \"Actualizacion R2\", \"Color\": \"#0a0a0a\", \"Fuente\": \"Arial\", \"Recurso\": \"\" }\n  ],\n  \"Motivo\": \"Actualizar diseno\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Render Diseno (SVG)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/diseno/render"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Lienzo\": { \"Ancho\": 900, \"Alto\": 500 },\n  \"Capas\": [\n    { \"Id\": \"titulo\", \"Tipo\": \"texto\", \"Orden\": 1, \"X\": 120, \"Y\": 120, \"Ancho\": 600, \"Alto\": 80, \"Opacidad\": 1, \"Rotacion\": 0, \"Texto\": \"Render ERP\", \"Color\": \"#1f2937\", \"Fuente\": \"Arial\", \"Recurso\": \"\" }\n  ]\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Galeria Producto",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/galeria"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  ""
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Lote Subir Imagenes (URL)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/imagen/lote-subir"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Imagenes\": [\n    { \"Url\": \"https://cdn.ejemplo/producto/frente.jpg\", \"TipoImagen\": \"FRENTE\", \"Orden\": 1 },\n    { \"Url\": \"https://cdn.ejemplo/producto/detalle.jpg\", \"TipoImagen\": \"DETALLE\", \"Orden\": 2 }\n  ],\n  \"Motivo\": \"Carga inicial de galeria\"\n}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Reordenar Galeria",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{token}}"
+                                                                     },
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/producto/{{productoId}}/galeria/reordenar"
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"Version\": \"{{version}}\",\n  \"Ordenes\": [\n    { \"ProductoImagen\": 1, \"Orden\": 2 },\n    { \"ProductoImagen\": 2, \"Orden\": 1 }\n  ],\n  \"Motivo\": \"Reordenar galeria para frontend\"\n}"
+                                                               }
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://127.0.0.1:8000"
+                     },
+                     {
+                         "key":  "token",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "refreshToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "empresaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "estadoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "fechaDesde",
+                         "value":  "2026-02-01"
+                     },
+                     {
+                         "key":  "fechaHasta",
+                         "value":  "2026-02-28"
+                     },
+                     {
+                         "key":  "claveIdempotencia",
+                         "value":  "{{$guid}}"
+                     },
+                     {
+                         "key":  "version",
+                         "value":  "2026-02-28 00:00:00"
+                     },
+                     {
+                         "key":  "usuarioId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "maquinaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "celdaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "loteId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "productoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "productoEmpresaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "productoFamiliaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "productoGrupoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "anuncioId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "mermaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "alertaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "aprobacionId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "reservaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "ventaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "reporteId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "iotEventoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "iotEventId",
+                         "value":  "evt-{{$guid}}"
+                     },
+                     {
+                         "key":  "iotTimestamp",
+                         "value":  "{{$timestamp}}"
+                     },
+                     {
+                         "key":  "iotFirma",
+                         "value":  "reemplazar_por_hmac_sha256"
+                     },
+                     {
+                         "key":  "iotSecreto",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "depositoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "disenoVersion",
+                         "value":  "{{version}}"
+                     },
+                     {
+                         "key":  "maquinaFotoId",
+                         "value":  "1"
+                     }
+                 ]
+}

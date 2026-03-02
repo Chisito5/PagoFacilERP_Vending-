@@ -2,11 +2,17 @@
 
 namespace App\Modulos\Reserva\Services;
 
+use App\Events\EventoReservaCancelada;
+use App\Events\EventoReservaConfirmada;
+use App\Events\EventoReservaCreada;
+use App\Events\EventoStockActualizado;
 use App\Support\EstadoCatalogo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use stdClass;
+use Throwable;
 
 class ReservaService
 {
@@ -196,6 +202,24 @@ class ReservaService
                 DB::connection('mysqlNegocio')->table('RESERVADETALLE')->insert($laDet);
             }
 
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina($tnMaquina);
+            $this->emitirEventoSeguro(new EventoReservaCreada($tnMaquina, $tnEmpresa, [
+                'Reserva' => $tnReserva,
+                'ReservaExterna' => $tcReservaExterna,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'Cantidad' => $tnCantidad,
+                'ExpiraEn' => $tdExpiraEn->toDateTimeString(),
+            ]), 'reserva.creada');
+            $this->emitirEventoSeguro(new EventoStockActualizado($tnMaquina, $tnEmpresa, [
+                'Origen' => 'reserva',
+                'Reserva' => $tnReserva,
+                'Celda' => $tnCelda,
+                'CodigoSeleccion' => $tcCodigoSeleccion,
+                'CantidadDisponible' => $tnDisponible - $tnCantidad,
+                'CantidadReservada' => $tnReservada + $tnCantidad,
+            ]), 'stock.actualizado.reserva');
+
             return response()->json([
                 'Ok' => true,
                 'Mensaje' => 'Reserva creada correctamente',
@@ -297,6 +321,22 @@ class ReservaService
                 ->update([
                     'Estado' => $laEstadosReserva['CANCELADA'],
                 ]);
+
+            $tnMaquina = (int)$loReserva->Maquina;
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina($tnMaquina);
+            $this->emitirEventoSeguro(new EventoReservaCancelada($tnMaquina, $tnEmpresa, [
+                'Reserva' => (int)$loReserva->Reserva,
+                'ReservaExterna' => (string)$loReserva->ReservaExterna,
+                'Celda' => (int)$loDet->Celda,
+                'Cantidad' => $tnCantidad,
+                'Motivo' => $tcMotivo,
+            ]), 'reserva.cancelada');
+            $this->emitirEventoSeguro(new EventoStockActualizado($tnMaquina, $tnEmpresa, [
+                'Origen' => 'reserva_cancelada',
+                'Reserva' => (int)$loReserva->Reserva,
+                'Celda' => (int)$loDet->Celda,
+                'CantidadLiberada' => $tnCantidad,
+            ]), 'stock.actualizado.reserva_cancelada');
 
             return response()->json([
                 'Ok' => true,
@@ -416,6 +456,21 @@ class ReservaService
                 ->update([
                     'Estado' => $laEstadosReserva['CONFIRMADA'],
                 ]);
+
+            $tnMaquina = (int)$loReserva->Maquina;
+            $tnEmpresa = $this->obtenerEmpresaPorMaquina($tnMaquina);
+            $this->emitirEventoSeguro(new EventoReservaConfirmada($tnMaquina, $tnEmpresa, [
+                'Reserva' => (int)$loReserva->Reserva,
+                'ReservaExterna' => (string)$loReserva->ReservaExterna,
+                'Celda' => (int)$loDet->Celda,
+                'Cantidad' => $tnCantidad,
+            ]), 'reserva.confirmada');
+            $this->emitirEventoSeguro(new EventoStockActualizado($tnMaquina, $tnEmpresa, [
+                'Origen' => 'reserva_confirmada',
+                'Reserva' => (int)$loReserva->Reserva,
+                'Celda' => (int)$loDet->Celda,
+                'CantidadReservada' => $tnReservada - $tnCantidad,
+            ]), 'stock.actualizado.reserva_confirmada');
 
             return response()->json([
                 'Ok' => true,
@@ -623,6 +678,22 @@ class ReservaService
         return true;
     }
 
+    private function obtenerEmpresaPorMaquina(int $tnMaquina): ?int
+    {
+        $loMaquina = DB::connection('mysqlNegocio')
+            ->table('MAQUINA as m')
+            ->leftJoin('UBICACION as u', 'u.Ubicacion', '=', 'm.UbicacionActual')
+            ->where('m.Maquina', $tnMaquina)
+            ->select('u.Empresa')
+            ->first();
+
+        if (!$loMaquina || !isset($loMaquina->Empresa)) {
+            return null;
+        }
+
+        return (int)$loMaquina->Empresa;
+    }
+
     /**
      * @return array{CREADA:int,CONFIRMADA:int,EXPIRADA:int,CANCELADA:int}
      */
@@ -634,5 +705,18 @@ class ReservaService
             'EXPIRADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_EXPIRADA),
             'CANCELADA' => $this->toEstadoCatalogo->obtenerId('RESERVA', self::CODIGO_RESERVA_CANCELADA),
         ];
+    }
+
+    private function emitirEventoSeguro(object $toEvento, string $tcContexto): void
+    {
+        try {
+            event($toEvento);
+        } catch (Throwable $toEx) {
+            Log::warning('evento_tiempo_real_fallido', [
+                'contexto' => $tcContexto,
+                'modulo' => 'reserva',
+                'error' => $toEx->getMessage(),
+            ]);
+        }
     }
 }

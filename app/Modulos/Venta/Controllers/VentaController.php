@@ -4,40 +4,17 @@ namespace App\Modulos\Venta\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modulos\Venta\Services\VentaService;
+use App\Soporte\RespuestaApi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class VentaController extends Controller
 {
-    private VentaService $loService;
-
-    /**
-     * SYSCOOP
-     * category: Controller
-     * package: App\Modulos\Venta\Controllers
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: VentaService $loService
-     * return: void
-     *
-     * Inyección del servicio de Venta.
-     */
-    public function __construct(VentaService $loService)
+    public function __construct(private VentaService $toService)
     {
-        $this->loService = $loService;
     }
 
-    /**
-     * SYSCOOP
-     * category: Controller
-     * package: App\Modulos\Venta\Controllers
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: Request $toRequest
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Procesa una venta por (Maquina + CodigoSeleccion).
-     */
-    public function Crear(Request $toRequest)
+    public function Crear(Request $toRequest): JsonResponse
     {
         return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
             $toRequest->validate([
@@ -46,64 +23,41 @@ class VentaController extends Controller
                 'Cantidad' => ['required', 'integer', 'min:1'],
             ]);
 
-            $tnMaquina = (int)$toRequest->input('Maquina');
-            $tcCodigoSeleccion = (string)$toRequest->input('CodigoSeleccion');
-            $tnCantidad = (int)$toRequest->input('Cantidad');
-
-            return $this->loService->VenderPorSeleccion($tnMaquina, $tcCodigoSeleccion, $tnCantidad);
+            return $this->toService->VenderPorSeleccion(
+                (int)$toRequest->input('Maquina'),
+                (string)$toRequest->input('CodigoSeleccion'),
+                (int)$toRequest->input('Cantidad')
+            );
         });
     }
 
-    /**
-     * SYSCOOP
-     * category: Controller
-     * package: App\Modulos\Venta\Controllers
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Lista todas las ventas (últimas primero).
-     */
-    public function Listar()
+    public function Listar(Request $toRequest): JsonResponse
     {
-        return $this->loService->Listar();
+        $tnPagina = (int)$toRequest->query('Pagina', 1);
+        $tnTamanoPagina = (int)$toRequest->query('TamanoPagina', 20);
+
+        $toPaginador = $this->toService->Listar($tnPagina, $tnTamanoPagina);
+
+        return RespuestaApi::paginado('Listado de ventas', $toPaginador);
     }
 
-    /**
-     * SYSCOOP
-     * category: Controller
-     * package: App\Modulos\Venta\Controllers
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: int $tnMaquina
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Lista ventas filtradas por máquina.
-     */
-    public function ListarPorMaquina(int $tnMaquina)
+    public function ListarPorMaquina(int $tnMaquina, Request $toRequest): JsonResponse
     {
         if ($tnMaquina <= 0) {
-            return response()->json([
-                'Ok' => false,
-                'Mensaje' => 'Maquina inválida'
-            ], 400);
+            return RespuestaApi::error('Maquina invalida', 400, [
+                ['Codigo' => 'VENTA_001', 'Campo' => 'Maquina', 'Detalle' => 'Debe enviar una maquina valida']
+            ]);
         }
 
-        return $this->loService->ListarPorMaquina($tnMaquina);
+        $tnPagina = (int)$toRequest->query('Pagina', 1);
+        $tnTamanoPagina = (int)$toRequest->query('TamanoPagina', 20);
+
+        $toPaginador = $this->toService->ListarPorMaquina($tnMaquina, $tnPagina, $tnTamanoPagina);
+
+        return RespuestaApi::paginado('Listado de ventas por maquina', $toPaginador);
     }
 
-    /**
-     * SYSCOOP
-     * category: Controller
-     * package: App\Modulos\Venta\Controllers
-     * author: Vladimir Meriles velasquez
-     * fecha: 27-02-2026
-     * param: Request $toRequest
-     * return: \Illuminate\Http\JsonResponse
-     *
-     * Reversa una venta (anula) y devuelve stock.
-     */
-    public function Reversar(Request $toRequest)
+    public function Reversar(Request $toRequest): JsonResponse
     {
         return $this->ejecutarIdempotente($toRequest, function () use ($toRequest) {
             $toRequest->validate([
@@ -111,10 +65,10 @@ class VentaController extends Controller
                 'Motivo' => ['required', 'string', 'max:255'],
             ]);
 
-            $tnVenta = (int)$toRequest->input('Venta');
-            $tcMotivo = (string)$toRequest->input('Motivo');
-
-            return $this->loService->Reversar($tnVenta, $tcMotivo);
+            return $this->toService->Reversar(
+                (int)$toRequest->input('Venta'),
+                (string)$toRequest->input('Motivo')
+            );
         });
     }
 }
