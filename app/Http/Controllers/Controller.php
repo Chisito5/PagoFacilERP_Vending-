@@ -25,21 +25,42 @@ abstract class Controller
             if ($taInicio['estado'] === IdempotenciaService::ESTADO_FALTA_CLAVE) {
                 return response()->json([
                     'Ok' => false,
-                    'Mensaje' => 'Clave-Idempotencia es obligatoria'
+                    'Mensaje' => 'Clave-Idempotencia es obligatoria',
+                    'Datos' => [],
+                    'Errores' => [[
+                        'Codigo' => 'REQ_400',
+                        'Campo' => 'Clave-Idempotencia',
+                        'Detalle' => 'Debe enviar la clave de idempotencia',
+                    ]],
+                    'Meta' => [],
                 ], 400);
             }
 
             if ($taInicio['estado'] === IdempotenciaService::ESTADO_CONFLICTO) {
                 return response()->json([
                     'Ok' => false,
-                    'Mensaje' => 'Clave-Idempotencia ya fue usada con otro cuerpo'
+                    'Mensaje' => 'Clave-Idempotencia ya fue usada con otro cuerpo',
+                    'Datos' => [],
+                    'Errores' => [[
+                        'Codigo' => 'IDEMPOTENCY_CONFLICT_409',
+                        'Campo' => 'Clave-Idempotencia',
+                        'Detalle' => 'La clave no puede reutilizarse con payload distinto',
+                    ]],
+                    'Meta' => [],
                 ], 409);
             }
 
             if ($taInicio['estado'] === IdempotenciaService::ESTADO_EN_PROCESO) {
                 return response()->json([
                     'Ok' => false,
-                    'Mensaje' => 'Solicitud con Clave-Idempotencia en proceso, reintente'
+                    'Mensaje' => 'Solicitud con Clave-Idempotencia en proceso, reintente',
+                    'Datos' => [],
+                    'Errores' => [[
+                        'Codigo' => 'IDEMPOTENCY_IN_PROGRESS_409',
+                        'Campo' => 'Clave-Idempotencia',
+                        'Detalle' => 'Existe una solicitud en proceso con la misma clave',
+                    ]],
+                    'Meta' => [],
                 ], 409);
             }
 
@@ -47,7 +68,10 @@ abstract class Controller
                 return response()->json(
                     $taInicio['respuesta'] ?? [],
                     (int)($taInicio['codigo_respuesta'] ?? 200),
-                    ['X-Repeticion-Idempotencia' => 'si']
+                    [
+                        'X-Repeticion-Idempotencia' => 'si',
+                        'X-Idempotent-Replay' => 'true',
+                    ]
                 );
             }
 

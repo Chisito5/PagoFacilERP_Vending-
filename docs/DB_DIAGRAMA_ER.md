@@ -1,0 +1,1270 @@
+# DIAGRAMA DB (Mermaid)
+
+```mermaid
+erDiagram
+    alcanceanuncio {
+        INT AlcanceAnuncio PK
+        VARCHAR NombreAlcanceAnuncio
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    alerta {
+        BIGINT Alerta PK
+        INT TipoAlerta
+        INT Maquina
+        INT Celda
+        INT ProductoEmpresa
+        VARCHAR Mensaje
+        INT Prioridad
+        DATETIME FechaHoraGeneracion
+        DATETIME FechaHoraAtencion
+        INT UsuarioAsignado
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    anuncio {
+        INT Anuncio PK
+        INT Empresa
+        INT AlcanceAnuncio
+        VARCHAR Titulo
+        TEXT Descripcion
+        VARCHAR RutaImagen
+        DATETIME FechaHoraInicio
+        DATETIME FechaHoraFin
+        INT Prioridad
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    anunciomaquina {
+        INT AnuncioMaquina PK
+        INT Anuncio
+        INT Maquina
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    anuncioproducto {
+        INT AnuncioProducto PK
+        INT Anuncio
+        INT Producto
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    aprobacion {
+        BIGINT Aprobacion PK
+        VARCHAR Entidad
+        VARCHAR EntidadId
+        VARCHAR AccionSolicitada
+        JSON DatosPropuestos
+        VARCHAR Motivo
+        TINYINT Estado
+        INT SolicitadoPor
+        INT AprobadoPor
+        DATETIME FechaSolicitud
+        DATETIME FechaResolucion
+        VARCHAR ComentarioResolucion
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    asignacionmaquina {
+        INT AsignacionMaquina PK
+        INT Maquina
+        INT EmpresaAdministradora
+        INT PlanConvenio
+        DATE FechaInicio
+        DATE FechaFin
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    bitacora {
+        BIGINT Bitacora PK
+        VARCHAR TablaAfectada
+        VARCHAR RegistroAfectado
+        VARCHAR Accion
+        VARCHAR Motivo
+        JSON DatosAntes
+        JSON DatosDespues
+        DATETIME FechaHora
+        INT Usuario
+    }
+    cache {
+        VARCHAR key PK
+        MEDIUMTEXT value
+        INT expiration
+    }
+    cache_locks {
+        VARCHAR key PK
+        VARCHAR owner
+        INT expiration
+    }
+    celda {
+        INT Celda PK
+        INT Maquina
+        VARCHAR CodigoSeleccion
+        INT Fila
+        INT Columna
+        INT CapacidadMaxima
+        INT AnchoMaximoMm
+        INT AltoMaximoMm
+        INT ProfundidadMaximaMm
+        DECIMAL PesoMaximoGr
+        TINYINT PermiteGiro
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    celdaconflicto {
+        BIGINT CeldaConflicto PK
+        INT Maquina
+        INT Celda
+        VARCHAR Tipo
+        VARCHAR Detalle
+        DATETIME FechaHora
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    celdaocupacion {
+        INT CeldaOcupacion PK
+        INT Maquina
+        INT CeldaAncla
+        INT Producto
+        INT Lote
+        INT Cantidad
+        INT SpanColumnas
+        INT SpanFilas
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    celdaocupaciondetalle {
+        INT CeldaOcupacionDetalle PK
+        INT CeldaOcupacion
+        INT Celda
+        VARCHAR TipoBloqueo
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    comandodispositivo {
+        BIGINT ComandoDispositivo PK
+        INT Dispositivo
+        INT TipoComandoDispositivo
+        JSON ParametrosJson
+        DATETIME FechaHoraSolicitud
+        DATETIME FechaHoraRespuesta
+        JSON RespuestaJson
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    deposito {
+        INT Deposito PK
+        INT Empresa
+        VARCHAR NombreDeposito
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    dispositivo {
+        INT Dispositivo PK
+        VARCHAR CodigoDispositivo
+        VARCHAR Imei
+        VARCHAR Iccid
+        VARCHAR NumeroSim
+        VARCHAR Modelo
+        VARCHAR VersionFirmware
+        DATE FechaAlta
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    empresa {
+        INT Empresa PK
+        VARCHAR CodigoEmpresa
+        VARCHAR RazonSocial
+        VARCHAR NombreComercial
+        VARCHAR Nit
+        VARCHAR Telefono
+        VARCHAR Correo
+        VARCHAR DireccionFiscal
+        INT TipoEmpresa
+        INT Estado
+        INT PlantillaVisualPredeterminada
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    estado {
+        INT Estado PK
+        VARCHAR Entidad
+        INT CodigoEstado
+        VARCHAR NombreEstado
+        VARCHAR Descripcion
+        INT Orden
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    eventomaquina {
+        BIGINT EventoMaquina PK
+        INT Maquina
+        INT Dispositivo
+        INT TipoEventoMaquina
+        JSON DatosJson
+        DATETIME FechaHora
+        INT Estado
+    }
+    existenciacelda {
+        INT ExistenciaCelda PK
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT CantidadDisponible
+        INT CantidadReservada
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    failed_jobs {
+        BIGINT id PK
+        VARCHAR uuid
+        TEXT connection
+        TEXT queue
+        LONGTEXT payload
+        LONGTEXT exception
+        TIMESTAMP failed_at
+    }
+    idempotencia {
+        BIGINT Idempotencia PK
+        VARCHAR Llave
+        VARCHAR Ruta
+        VARCHAR Metodo
+        CHAR HashCuerpo
+        INT CodigoRespuesta
+        LONGTEXT Respuesta
+        TINYINT Procesado
+        DATETIME CreadoEn
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    iotevento {
+        INT IotEvento PK
+        VARCHAR Origen
+        VARCHAR EventId
+        DATETIME FechaEvento
+        JSON Payload
+        VARCHAR Firma
+        INT IntentosProcesamiento
+        INT Estado
+        DATETIME FechaRecepcion
+        DATETIME FechaProcesamiento
+        VARCHAR ErrorUltimo
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    ioteventointento {
+        INT IotEventoIntento PK
+        INT IotEvento
+        INT NumeroIntento
+        DATETIME FechaIntento
+        INT Estado
+        VARCHAR Mensaje
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    job_batches {
+        VARCHAR id PK
+        VARCHAR name
+        INT total_jobs
+        INT pending_jobs
+        INT FAILED_JOBS
+        LONGTEXT failed_job_ids
+        MEDIUMTEXT options
+        INT cancelled_at
+        INT created_at
+        INT finished_at
+    }
+    jobs {
+        BIGINT id PK
+        VARCHAR queue
+        LONGTEXT payload
+        TINYINT attempts
+        INT reserved_at
+        INT available_at
+        INT created_at
+    }
+    lote {
+        INT Lote PK
+        INT Producto
+        VARCHAR CodigoLote
+        DATE FechaVencimiento
+        DATE FechaRegistro
+        INT CantidadInicial
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    maquina {
+        INT Maquina PK
+        VARCHAR CodigoMaquina
+        VARCHAR NumeroSerie
+        VARCHAR Marca
+        VARCHAR Modelo
+        VARCHAR IdentificadorConexion
+        INT TipoInternet
+        DECIMAL ConsumoKwhMensual
+        INT UbicacionActual
+        INT FilasMatriz
+        INT ColumnasMatriz
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    maquinadispositivo {
+        INT MaquinaDispositivo PK
+        INT Maquina
+        INT Dispositivo
+        DATE FechaInicio
+        DATE FechaFin
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    maquinaestadooperativo {
+        INT MaquinaEstadoOperativo PK
+        INT Maquina
+        VARCHAR EstadoOperativo
+        VARCHAR Motivo
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    maquinaestadooperativohistorial {
+        INT MaquinaEstadoOperativoHistorial PK
+        INT Maquina
+        VARCHAR EstadoOperativoAnterior
+        VARCHAR EstadoOperativoNuevo
+        VARCHAR Motivo
+        DATETIME FechaCambio
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    maquinaimagen {
+        INT MaquinaImagen PK
+        INT Maquina
+        VARCHAR TipoFoto
+        VARCHAR RutaImagen
+        INT Orden
+        VARCHAR Observacion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    merma {
+        INT Merma PK
+        INT Maquina
+        INT UsuarioOperador
+        INT TipoMerma
+        DATETIME FechaHora
+        VARCHAR Observacion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    mermadetalle {
+        INT MermaDetalle PK
+        INT Merma
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT CantidadRetirada
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    mermaevidencia {
+        INT MermaEvidencia PK
+        INT Merma
+        VARCHAR NombreArchivo
+        VARCHAR RutaArchivo
+        VARCHAR MimeArchivo
+        BIGINT TamanoBytes
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    metodopago {
+        INT MetodoPago PK
+        VARCHAR NombreMetodoPago
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    migrations {
+        INT id PK
+        VARCHAR migration
+        INT batch
+    }
+    movimientodeposito {
+        BIGINT MovimientoDeposito PK
+        INT Deposito
+        VARCHAR TipoMovimiento
+        INT Producto
+        INT Lote
+        INT Cantidad
+        VARCHAR Referencia
+        VARCHAR Observacion
+        INT Maquina
+        INT Celda
+        DATETIME FechaHora
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    movimientoinventario {
+        BIGINT MovimientoInventario PK
+        INT Maquina
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT TipoMovimientoInventario
+        INT Cantidad
+        DECIMAL CostoUnitario
+        INT Reposicion
+        INT Merma
+        BIGINT Transaccion
+        DATETIME FechaHora
+        VARCHAR Observacion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    pago {
+        BIGINT Pago PK
+        BIGINT Transaccion
+        INT MetodoPago
+        VARCHAR ProveedorPago
+        DECIMAL MontoPagado
+        VARCHAR CodigoAutorizacion
+        VARCHAR ReferenciaPago
+        DATETIME FechaHoraPago
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    password_reset_tokens {
+        VARCHAR email PK
+        VARCHAR token
+        TIMESTAMP created_at
+    }
+    permiso {
+        INT Permiso PK
+        VARCHAR CodigoPermiso
+        VARCHAR NombrePermiso
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    planconvenio {
+        INT PlanConvenio PK
+        VARCHAR NombrePlanConvenio
+        VARCHAR Descripcion
+        DECIMAL CostoMensual
+        DECIMAL ComisionPorcentaje
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    planograma {
+        INT Planograma PK
+        INT Maquina
+        INT VersionPlanograma
+        VARCHAR NombrePlanograma
+        DATETIME FechaInicio
+        DATETIME FechaFin
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    planogramacelda {
+        INT PlanogramaCelda PK
+        INT Planograma
+        INT Celda
+        INT ProductoEmpresa
+        DECIMAL PrecioVenta
+        INT StockMinimo
+        INT StockMaximo
+        INT PlanogramaCeldaPrincipal
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    plantillavisual {
+        INT PlantillaVisual PK
+        INT Empresa
+        VARCHAR NombrePlantillaVisual
+        VARCHAR RutaFondo
+        VARCHAR RutaSticker
+        VARCHAR TextoSticker
+        INT Prioridad
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    producto {
+        INT Producto PK
+        INT Empresa
+        VARCHAR CodigoSku
+        VARCHAR CodigoProducto
+        VARCHAR CodigoBarra
+        VARCHAR NombreProducto
+        DECIMAL Precio
+        INT AnchoMm
+        INT AltoMm
+        INT ProfundidadMm
+        VARCHAR Orientacion
+        TINYINT PermiteGiro
+        VARCHAR UnidadEmpaque
+        TEXT Descripcion
+        VARCHAR Marca
+        DECIMAL ContenidoCantidad
+        INT UnidadMedidaContenido
+        DECIMAL PesoGramos
+        DECIMAL PesoGr
+        INT SubgrupoProducto
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productodiseno {
+        INT ProductoDiseno PK
+        INT Producto
+        INT LienzoAncho
+        INT LienzoAlto
+        JSON JsonDiseno
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productodisenocapa {
+        INT ProductoDisenoCapa PK
+        INT ProductoDiseno
+        VARCHAR CapaIdExterno
+        VARCHAR Tipo
+        INT Orden
+        DECIMAL X
+        DECIMAL Y
+        DECIMAL Ancho
+        DECIMAL Alto
+        DECIMAL Opacidad
+        DECIMAL Rotacion
+        VARCHAR Texto
+        VARCHAR Color
+        VARCHAR Fuente
+        VARCHAR Recurso
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productoempresa {
+        INT ProductoEmpresa PK
+        INT Empresa
+        INT Producto
+        VARCHAR NombrePublico
+        TEXT DescripcionPublica
+        INT PlantillaVisual
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productofamilia {
+        INT FamiliaProducto PK
+        INT Empresa
+        VARCHAR NombreFamiliaProducto
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productogrupo {
+        INT GrupoProducto PK
+        INT FamiliaProducto
+        VARCHAR NombreGrupoProducto
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productoimagen {
+        INT ProductoImagen PK
+        INT Producto
+        INT TipoImagen
+        VARCHAR RutaImagen
+        INT Orden
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    productosubgrupo {
+        INT SubgrupoProducto PK
+        INT GrupoProducto
+        VARCHAR NombreSubgrupoProducto
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reglaalerta {
+        INT ReglaAlerta PK
+        INT Empresa
+        INT Maquina
+        INT Celda
+        INT TipoAlerta
+        INT TipoTelemetria
+        VARCHAR TipoRegla
+        DECIMAL UmbralMinimo
+        DECIMAL UmbralMaximo
+        TINYINT Prioridad
+        VARCHAR MensajeRegla
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reportearchivo {
+        INT ReporteArchivo PK
+        INT ReporteGenerado
+        VARCHAR NombreArchivo
+        VARCHAR RutaArchivo
+        VARCHAR MimeArchivo
+        BIGINT TamanoBytes
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reportegenerado {
+        INT ReporteGenerado PK
+        INT Empresa
+        INT UsuarioSolicitante
+        VARCHAR TipoReporte
+        VARCHAR Formato
+        JSON Filtros
+        INT Estado
+        DATETIME FechaSolicitud
+        DATETIME FechaInicioProceso
+        DATETIME FechaFinProceso
+        DATETIME FechaExpiracion
+        VARCHAR MensajeEstado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reposicion {
+        INT Reposicion PK
+        INT Maquina
+        INT UsuarioOperador
+        DATETIME FechaHoraInicio
+        DATETIME FechaHoraFin
+        VARCHAR Observacion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reposiciondetalle {
+        INT ReposicionDetalle PK
+        INT Reposicion
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT CantidadAgregada
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reserva {
+        INT Reserva PK
+        VARCHAR ReservaExterna
+        INT Maquina
+        DATETIME FechaHoraReserva
+        DATETIME ExpiraEn
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    reservadetalle {
+        INT ReservaDetalle PK
+        INT Reserva
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT Cantidad
+        DECIMAL PrecioUnitario
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    rol {
+        INT Rol PK
+        VARCHAR NombreRol
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    rolpermiso {
+        INT RolPermiso PK
+        INT Rol
+        INT Permiso
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    sesionapi {
+        INT SesionApi PK
+        INT Usuario
+        CHAR HashTokenAcceso
+        CHAR HashTokenRefresco
+        DATETIME ExpiraAccesoEn
+        DATETIME ExpiraRefrescoEn
+        DATETIME FechaHoraRevocacion
+        VARCHAR Ip
+        VARCHAR Agente
+        DATETIME UltimoUsoEn
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+        DATETIME CreadoEn
+    }
+    sessions {
+        VARCHAR id PK
+        BIGINT user_id
+        VARCHAR ip_address
+        TEXT user_agent
+        LONGTEXT payload
+        INT last_activity
+    }
+    stockdeposito {
+        INT StockDeposito PK
+        INT Deposito
+        INT Producto
+        INT Lote
+        INT CantidadDisponible
+        INT CantidadReservada
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    telemetria {
+        BIGINT Telemetria PK
+        INT Dispositivo
+        INT TipoTelemetria
+        DECIMAL ValorNumerico
+        VARCHAR ValorTexto
+        JSON DatosJson
+        DATETIME FechaHora
+        INT Estado
+    }
+    tipoalerta {
+        INT TipoAlerta PK
+        VARCHAR NombreTipoAlerta
+        VARCHAR Descripcion
+        INT Severidad
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipoalimentacionelectrica {
+        INT TipoAlimentacionElectrica PK
+        VARCHAR NombreTipoAlimentacionElectrica
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipocanalventa {
+        INT TipoCanalVenta PK
+        VARCHAR NombreCanalVenta
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipocomandodispositivo {
+        INT TipoComandoDispositivo PK
+        VARCHAR NombreTipoComandoDispositivo
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipoempresa {
+        INT TipoEmpresa PK
+        VARCHAR NombreTipoEmpresa
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipoeventomaquina {
+        INT TipoEventoMaquina PK
+        VARCHAR NombreTipoEventoMaquina
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipoimagen {
+        INT TipoImagen PK
+        VARCHAR NombreTipoImagen
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipointernet {
+        INT TipoInternet PK
+        VARCHAR CodigoTipoInternet
+        VARCHAR NombreTipoInternet
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipolugarinstalacion {
+        INT TipoLugarInstalacion PK
+        VARCHAR CodigoTipoLugar
+        VARCHAR NombreTipoLugar
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipomerma {
+        INT TipoMerma PK
+        VARCHAR NombreTipoMerma
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipomovimientoinventario {
+        INT TipoMovimientoInventario PK
+        VARCHAR NombreTipoMovimientoInventario
+        INT Factor
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    tipotelemetria {
+        INT TipoTelemetria PK
+        VARCHAR NombreTipoTelemetria
+        VARCHAR Unidad
+        VARCHAR Descripcion
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    transaccion {
+        BIGINT Transaccion PK
+        VARCHAR CodigoTransaccion
+        INT Maquina
+        INT EmpresaAdministradora
+        INT UsuarioCliente
+        INT TipoCanalVenta
+        VARCHAR CodigoRetiro
+        DATETIME FechaVencimientoCodigoRetiro
+        DECIMAL MontoTotal
+        VARCHAR Moneda
+        VARCHAR ReferenciaExternaPago
+        DATETIME FechaHoraCreacion
+        DATETIME FechaHoraPago
+        DATETIME FechaHoraDispensado
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    transacciondetalle {
+        BIGINT TransaccionDetalle PK
+        BIGINT Transaccion
+        INT ProductoEmpresa
+        INT Cantidad
+        DECIMAL PrecioUnitario
+        DECIMAL Descuento
+        DECIMAL Subtotal
+    }
+    ubicacion {
+        INT Ubicacion PK
+        INT Empresa
+        VARCHAR NombreUbicacion
+        INT TipoLugarInstalacion
+        VARCHAR Departamento
+        VARCHAR Ciudad
+        VARCHAR Zona
+        VARCHAR Direccion
+        VARCHAR Referencia
+        DECIMAL Latitud
+        DECIMAL Longitud
+        VARCHAR ContactoNombre
+        VARCHAR ContactoTelefono
+        INT TipoAlimentacionElectrica
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    unidadmedida {
+        INT UnidadMedida PK
+        VARCHAR NombreUnidadMedida
+        VARCHAR Abreviatura
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    users {
+        BIGINT id PK
+        VARCHAR name
+        VARCHAR email
+        TIMESTAMP email_verified_at
+        VARCHAR password
+        VARCHAR remember_token
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    usuario {
+        INT Usuario PK
+        INT Empresa
+        VARCHAR NombreUsuario
+        VARCHAR ClaveCifrada
+        VARCHAR Nombres
+        VARCHAR Apellidos
+        VARCHAR Correo
+        VARCHAR Telefono
+        VARCHAR DocumentoIdentidad
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    usuariomaquina {
+        INT UsuarioMaquina PK
+        INT Usuario
+        INT Maquina
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    usuariorol {
+        INT UsuarioRol PK
+        INT Usuario
+        INT Rol
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    venta {
+        INT Venta PK
+        INT Maquina
+        INT Celda
+        INT ProductoEmpresa
+        INT Lote
+        INT Cantidad
+        DECIMAL PrecioUnitario
+        DATETIME FechaVenta
+        INT Estado
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+    ventareversa {
+        INT VentaReversa PK
+        INT Venta
+        VARCHAR Motivo
+        DATETIME FechaHora
+        INT Usr
+        DATE UsrFecha
+        VARCHAR UsrHora
+    }
+
+    estado ||--o{ alcanceanuncio : "Estado->Estado"
+    celda ||--o{ alerta : "Celda->Celda"
+    estado ||--o{ alerta : "Estado->Estado"
+    maquina ||--o{ alerta : "Maquina->Maquina"
+    productoempresa ||--o{ alerta : "ProductoEmpresa->ProductoEmpresa"
+    tipoalerta ||--o{ alerta : "TipoAlerta->TipoAlerta"
+    usuario ||--o{ alerta : "UsuarioAsignado->Usuario"
+    alcanceanuncio ||--o{ anuncio : "AlcanceAnuncio->AlcanceAnuncio"
+    empresa ||--o{ anuncio : "Empresa->Empresa"
+    estado ||--o{ anuncio : "Estado->Estado"
+    anuncio ||--o{ anunciomaquina : "Anuncio->Anuncio"
+    estado ||--o{ anunciomaquina : "Estado->Estado"
+    maquina ||--o{ anunciomaquina : "Maquina->Maquina"
+    anuncio ||--o{ anuncioproducto : "Anuncio->Anuncio"
+    estado ||--o{ anuncioproducto : "Estado->Estado"
+    producto ||--o{ anuncioproducto : "Producto->Producto"
+    empresa ||--o{ asignacionmaquina : "EmpresaAdministradora->Empresa"
+    estado ||--o{ asignacionmaquina : "Estado->Estado"
+    maquina ||--o{ asignacionmaquina : "Maquina->Maquina"
+    planconvenio ||--o{ asignacionmaquina : "PlanConvenio->PlanConvenio"
+    usuario ||--o{ bitacora : "Usuario->Usuario"
+    estado ||--o{ celda : "Estado->Estado"
+    maquina ||--o{ celda : "Maquina->Maquina"
+    celda ||--o{ celdaconflicto : "Celda->Celda"
+    estado ||--o{ celdaconflicto : "Estado->Estado"
+    maquina ||--o{ celdaconflicto : "Maquina->Maquina"
+    celda ||--o{ celdaocupacion : "CeldaAncla->Celda"
+    estado ||--o{ celdaocupacion : "Estado->Estado"
+    lote ||--o{ celdaocupacion : "Lote->Lote"
+    maquina ||--o{ celdaocupacion : "Maquina->Maquina"
+    producto ||--o{ celdaocupacion : "Producto->Producto"
+    celda ||--o{ celdaocupaciondetalle : "Celda->Celda"
+    estado ||--o{ celdaocupaciondetalle : "Estado->Estado"
+    celdaocupacion ||--o{ celdaocupaciondetalle : "CeldaOcupacion->CeldaOcupacion"
+    dispositivo ||--o{ comandodispositivo : "Dispositivo->Dispositivo"
+    estado ||--o{ comandodispositivo : "Estado->Estado"
+    tipocomandodispositivo ||--o{ comandodispositivo : "TipoComandoDispositivo->TipoComandoDispositivo"
+    empresa ||--o{ deposito : "Empresa->Empresa"
+    estado ||--o{ deposito : "Estado->Estado"
+    estado ||--o{ dispositivo : "Estado->Estado"
+    estado ||--o{ empresa : "Estado->Estado"
+    plantillavisual ||--o{ empresa : "PlantillaVisualPredeterminada->PlantillaVisual"
+    tipoempresa ||--o{ empresa : "TipoEmpresa->TipoEmpresa"
+    dispositivo ||--o{ eventomaquina : "Dispositivo->Dispositivo"
+    estado ||--o{ eventomaquina : "Estado->Estado"
+    maquina ||--o{ eventomaquina : "Maquina->Maquina"
+    tipoeventomaquina ||--o{ eventomaquina : "TipoEventoMaquina->TipoEventoMaquina"
+    celda ||--o{ existenciacelda : "Celda->Celda"
+    estado ||--o{ existenciacelda : "Estado->Estado"
+    lote ||--o{ existenciacelda : "Lote->Lote"
+    productoempresa ||--o{ existenciacelda : "ProductoEmpresa->ProductoEmpresa"
+    estado ||--o{ iotevento : "Estado->Estado"
+    estado ||--o{ ioteventointento : "Estado->Estado"
+    iotevento ||--o{ ioteventointento : "IotEvento->IotEvento"
+    estado ||--o{ lote : "Estado->Estado"
+    producto ||--o{ lote : "Producto->Producto"
+    tipointernet ||--o{ maquina : "TipoInternet->TipoInternet"
+    estado ||--o{ maquina : "Estado->Estado"
+    ubicacion ||--o{ maquina : "UbicacionActual->Ubicacion"
+    dispositivo ||--o{ maquinadispositivo : "Dispositivo->Dispositivo"
+    estado ||--o{ maquinadispositivo : "Estado->Estado"
+    maquina ||--o{ maquinadispositivo : "Maquina->Maquina"
+    estado ||--o{ maquinaestadooperativo : "Estado->Estado"
+    maquina ||--o{ maquinaestadooperativo : "Maquina->Maquina"
+    estado ||--o{ maquinaestadooperativohistorial : "Estado->Estado"
+    maquina ||--o{ maquinaestadooperativohistorial : "Maquina->Maquina"
+    estado ||--o{ maquinaimagen : "Estado->Estado"
+    maquina ||--o{ maquinaimagen : "Maquina->Maquina"
+    estado ||--o{ merma : "Estado->Estado"
+    maquina ||--o{ merma : "Maquina->Maquina"
+    tipomerma ||--o{ merma : "TipoMerma->TipoMerma"
+    usuario ||--o{ merma : "UsuarioOperador->Usuario"
+    celda ||--o{ mermadetalle : "Celda->Celda"
+    estado ||--o{ mermadetalle : "Estado->Estado"
+    lote ||--o{ mermadetalle : "Lote->Lote"
+    merma ||--o{ mermadetalle : "Merma->Merma"
+    productoempresa ||--o{ mermadetalle : "ProductoEmpresa->ProductoEmpresa"
+    estado ||--o{ mermaevidencia : "Estado->Estado"
+    merma ||--o{ mermaevidencia : "Merma->Merma"
+    estado ||--o{ metodopago : "Estado->Estado"
+    celda ||--o{ movimientodeposito : "Celda->Celda"
+    deposito ||--o{ movimientodeposito : "Deposito->Deposito"
+    estado ||--o{ movimientodeposito : "Estado->Estado"
+    lote ||--o{ movimientodeposito : "Lote->Lote"
+    maquina ||--o{ movimientodeposito : "Maquina->Maquina"
+    producto ||--o{ movimientodeposito : "Producto->Producto"
+    celda ||--o{ movimientoinventario : "Celda->Celda"
+    estado ||--o{ movimientoinventario : "Estado->Estado"
+    lote ||--o{ movimientoinventario : "Lote->Lote"
+    maquina ||--o{ movimientoinventario : "Maquina->Maquina"
+    merma ||--o{ movimientoinventario : "Merma->Merma"
+    productoempresa ||--o{ movimientoinventario : "ProductoEmpresa->ProductoEmpresa"
+    reposicion ||--o{ movimientoinventario : "Reposicion->Reposicion"
+    tipomovimientoinventario ||--o{ movimientoinventario : "TipoMovimientoInventario->TipoMovimientoInventario"
+    transaccion ||--o{ movimientoinventario : "Transaccion->Transaccion"
+    estado ||--o{ pago : "Estado->Estado"
+    metodopago ||--o{ pago : "MetodoPago->MetodoPago"
+    transaccion ||--o{ pago : "Transaccion->Transaccion"
+    estado ||--o{ planconvenio : "Estado->Estado"
+    estado ||--o{ planograma : "Estado->Estado"
+    maquina ||--o{ planograma : "Maquina->Maquina"
+    celda ||--o{ planogramacelda : "Celda->Celda"
+    estado ||--o{ planogramacelda : "Estado->Estado"
+    planograma ||--o{ planogramacelda : "Planograma->Planograma"
+    planogramacelda ||--o{ planogramacelda : "PlanogramaCeldaPrincipal->PlanogramaCelda"
+    productoempresa ||--o{ planogramacelda : "ProductoEmpresa->ProductoEmpresa"
+    empresa ||--o{ plantillavisual : "Empresa->Empresa"
+    estado ||--o{ plantillavisual : "Estado->Estado"
+    empresa ||--o{ producto : "Empresa->Empresa"
+    estado ||--o{ producto : "Estado->Estado"
+    productosubgrupo ||--o{ producto : "SubgrupoProducto->SubgrupoProducto"
+    unidadmedida ||--o{ producto : "UnidadMedidaContenido->UnidadMedida"
+    estado ||--o{ productodiseno : "Estado->Estado"
+    producto ||--o{ productodiseno : "Producto->Producto"
+    productodiseno ||--o{ productodisenocapa : "ProductoDiseno->ProductoDiseno"
+    estado ||--o{ productodisenocapa : "Estado->Estado"
+    empresa ||--o{ productoempresa : "Empresa->Empresa"
+    estado ||--o{ productoempresa : "Estado->Estado"
+    plantillavisual ||--o{ productoempresa : "PlantillaVisual->PlantillaVisual"
+    producto ||--o{ productoempresa : "Producto->Producto"
+    empresa ||--o{ productofamilia : "Empresa->Empresa"
+    estado ||--o{ productofamilia : "Estado->Estado"
+    estado ||--o{ productogrupo : "Estado->Estado"
+    productofamilia ||--o{ productogrupo : "FamiliaProducto->FamiliaProducto"
+    estado ||--o{ productoimagen : "Estado->Estado"
+    producto ||--o{ productoimagen : "Producto->Producto"
+    tipoimagen ||--o{ productoimagen : "TipoImagen->TipoImagen"
+    estado ||--o{ productosubgrupo : "Estado->Estado"
+    productogrupo ||--o{ productosubgrupo : "GrupoProducto->GrupoProducto"
+    celda ||--o{ reglaalerta : "Celda->Celda"
+    empresa ||--o{ reglaalerta : "Empresa->Empresa"
+    estado ||--o{ reglaalerta : "Estado->Estado"
+    maquina ||--o{ reglaalerta : "Maquina->Maquina"
+    tipoalerta ||--o{ reglaalerta : "TipoAlerta->TipoAlerta"
+    tipotelemetria ||--o{ reglaalerta : "TipoTelemetria->TipoTelemetria"
+    estado ||--o{ reportearchivo : "Estado->Estado"
+    reportegenerado ||--o{ reportearchivo : "ReporteGenerado->ReporteGenerado"
+    empresa ||--o{ reportegenerado : "Empresa->Empresa"
+    estado ||--o{ reportegenerado : "Estado->Estado"
+    usuario ||--o{ reportegenerado : "UsuarioSolicitante->Usuario"
+    estado ||--o{ reposicion : "Estado->Estado"
+    maquina ||--o{ reposicion : "Maquina->Maquina"
+    usuario ||--o{ reposicion : "UsuarioOperador->Usuario"
+    celda ||--o{ reposiciondetalle : "Celda->Celda"
+    estado ||--o{ reposiciondetalle : "Estado->Estado"
+    lote ||--o{ reposiciondetalle : "Lote->Lote"
+    productoempresa ||--o{ reposiciondetalle : "ProductoEmpresa->ProductoEmpresa"
+    reposicion ||--o{ reposiciondetalle : "Reposicion->Reposicion"
+    maquina ||--o{ reserva : "Maquina->Maquina"
+    celda ||--o{ reservadetalle : "Celda->Celda"
+    lote ||--o{ reservadetalle : "Lote->Lote"
+    productoempresa ||--o{ reservadetalle : "ProductoEmpresa->ProductoEmpresa"
+    reserva ||--o{ reservadetalle : "Reserva->Reserva"
+    estado ||--o{ rol : "Estado->Estado"
+    estado ||--o{ sesionapi : "Estado->Estado"
+    usuario ||--o{ sesionapi : "Usuario->Usuario"
+    deposito ||--o{ stockdeposito : "Deposito->Deposito"
+    estado ||--o{ stockdeposito : "Estado->Estado"
+    lote ||--o{ stockdeposito : "Lote->Lote"
+    producto ||--o{ stockdeposito : "Producto->Producto"
+    dispositivo ||--o{ telemetria : "Dispositivo->Dispositivo"
+    estado ||--o{ telemetria : "Estado->Estado"
+    tipotelemetria ||--o{ telemetria : "TipoTelemetria->TipoTelemetria"
+    estado ||--o{ tipoalerta : "Estado->Estado"
+    estado ||--o{ tipoalimentacionelectrica : "Estado->Estado"
+    estado ||--o{ tipocanalventa : "Estado->Estado"
+    estado ||--o{ tipocomandodispositivo : "Estado->Estado"
+    estado ||--o{ tipoempresa : "Estado->Estado"
+    estado ||--o{ tipoeventomaquina : "Estado->Estado"
+    estado ||--o{ tipoimagen : "Estado->Estado"
+    estado ||--o{ tipointernet : "Estado->Estado"
+    estado ||--o{ tipolugarinstalacion : "Estado->Estado"
+    estado ||--o{ tipomerma : "Estado->Estado"
+    estado ||--o{ tipomovimientoinventario : "Estado->Estado"
+    estado ||--o{ tipotelemetria : "Estado->Estado"
+    tipocanalventa ||--o{ transaccion : "TipoCanalVenta->TipoCanalVenta"
+    usuario ||--o{ transaccion : "UsuarioCliente->Usuario"
+    empresa ||--o{ transaccion : "EmpresaAdministradora->Empresa"
+    estado ||--o{ transaccion : "Estado->Estado"
+    maquina ||--o{ transaccion : "Maquina->Maquina"
+    productoempresa ||--o{ transacciondetalle : "ProductoEmpresa->ProductoEmpresa"
+    transaccion ||--o{ transacciondetalle : "Transaccion->Transaccion"
+    tipolugarinstalacion ||--o{ ubicacion : "TipoLugarInstalacion->TipoLugarInstalacion"
+    empresa ||--o{ ubicacion : "Empresa->Empresa"
+    estado ||--o{ ubicacion : "Estado->Estado"
+    tipoalimentacionelectrica ||--o{ ubicacion : "TipoAlimentacionElectrica->TipoAlimentacionElectrica"
+    estado ||--o{ unidadmedida : "Estado->Estado"
+    empresa ||--o{ usuario : "Empresa->Empresa"
+    estado ||--o{ usuario : "Estado->Estado"
+    estado ||--o{ usuariomaquina : "Estado->Estado"
+    maquina ||--o{ usuariomaquina : "Maquina->Maquina"
+    usuario ||--o{ usuariomaquina : "Usuario->Usuario"
+    estado ||--o{ usuariorol : "Estado->Estado"
+    rol ||--o{ usuariorol : "Rol->Rol"
+    usuario ||--o{ usuariorol : "Usuario->Usuario"
+    maquina ||--o{ venta : "Maquina->Maquina"
+    celda ||--o{ venta : "Celda->Celda"
+    productoempresa ||--o{ venta : "ProductoEmpresa->ProductoEmpresa"
+    lote ||--o{ venta : "Lote->Lote"
+    estado ||--o{ venta : "Estado->Estado"
+    venta ||--o{ ventareversa : "Venta->Venta"
+```

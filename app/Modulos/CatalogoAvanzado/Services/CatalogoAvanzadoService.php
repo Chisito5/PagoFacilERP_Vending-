@@ -330,6 +330,22 @@ class CatalogoAvanzadoService
                 'UsrHora' => $tdAhora->format('H:i:s'),
             ]);
 
+            // Si es una imagen de producto, elimina el archivo fisico cuando ya no tenga referencias activas.
+            if ($tcTabla === 'PRODUCTOIMAGEN') {
+                $tcRutaImagen = trim((string)($loActual->RutaImagen ?? ''));
+                if ($tcRutaImagen !== '') {
+                    $tnReferenciasActivas = (int)DB::connection($this->pcConexion)
+                        ->table('PRODUCTOIMAGEN')
+                        ->where('RutaImagen', $tcRutaImagen)
+                        ->where('Estado', $this->toEstadoNegocio->activoGeneral())
+                        ->count();
+
+                    if ($tnReferenciasActivas === 0) {
+                        $this->toArchivoStorage->eliminar($tcRutaImagen);
+                    }
+                }
+            }
+
             $loNuevo = DB::connection($this->pcConexion)->table($tcTabla)->where($tcPk, $tnId)->first();
             $laAntes = $this->normalizar($loActual);
             $laDespues = $this->normalizar($loNuevo);

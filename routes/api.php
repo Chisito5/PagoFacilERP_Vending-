@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__ . '/api/auth.php';
 require __DIR__ . '/api/integracion_iot.php';
+require __DIR__ . '/api/erp_v1.php';
 
 Route::middleware('auth:api_negocio')->group(function (): void {
     require __DIR__ . '/api/empresa.php';
@@ -24,6 +25,7 @@ Route::middleware('auth:api_negocio')->group(function (): void {
     require __DIR__ . '/api/planogramacelda.php';
     require __DIR__ . '/api/existenciacelda.php';
     require __DIR__ . '/api/stock.php';
+    require __DIR__ . '/api/kiosko.php';
     require __DIR__ . '/api/reposicion.php';
     require __DIR__ . '/api/deposito.php';
     require __DIR__ . '/api/reserva.php';

@@ -488,3 +488,65 @@ Reglas operativas:
 2. En BD se guarda `RutaImagen`/`RutaArchivo` como key del objeto S3.
 3. Historicos locales no se migran en este paso y siguen resolviendo URL local automaticamente.
 4. El contrato API no cambia; solo cambia el dominio de `UrlImagen`/`UrlArchivo` para archivos nuevos.
+
+## 13. API Kiosko v1 (Ecommerce)
+Base dedicada:
+- `/api/kiosko/v1`
+
+Objetivo:
+- Centralizar catalogo + transacciones de compra para kiosko/APK sin depender de endpoints dispersos.
+
+Reglas cerradas:
+1. Auth con `Authorization: Bearer <token>`.
+2. Idempotencia en POST con `Clave-Idempotencia`.
+3. Contrato uniforme `{Ok,Mensaje,Datos,Errores,Meta}`.
+4. Snapshot de catalogo completo (sin paginacion).
+5. `VersionCatalogo` = `sha1` determinista (lowercase hex).
+6. Zona horaria de salida kiosko: `America/La_Paz`.
+7. `PrecioVenta` no vendible: `null`.
+8. `UrlImagen` sin imagen: `null`.
+9. `HashImagen` sin imagen: `null`.
+10. URL de imagen publica permanente (no firmada temporal).
+
+Endpoints:
+- `GET /api/kiosko/v1/maquina/{Maquina}/catalogo`
+- `POST /api/kiosko/v1/venta`
+- `POST /api/kiosko/v1/venta/reversa`
+- `POST /api/kiosko/v1/reserva`
+- `POST /api/kiosko/v1/reserva/confirmar`
+- `POST /api/kiosko/v1/reserva/cancelar`
+
+Definiciones de negocio en catalogo:
+- `Bloqueada = 1` cuando `CELDA.Estado != 1` o existe bloqueo activo en `CELDAOCUPACIONDETALLE` (`TipoBloqueo='BLOQUEADA'`).
+- Fuente de precio: `PLANOGRAMACELDA.PrecioVenta` del planograma activo mas reciente (`Planograma DESC`).
+- Si no hay planograma activo: respuesta `200`, celdas no vendibles (`TieneProducto=false`, `PrecioVenta=null`) y `Meta.SinPlanogramaActivo=true`.
+
+Documento dedicado:
+- `docs/API_KIOSKO_V1.md`
+
+Coleccion Postman:
+- `docs/postman/Kiosko-v1.postman_collection.json`
+
+## 14. API ERP v1 (Frontend ERP)
+
+Base:
+- `/api/erp/v1`
+
+Documentacion dedicada:
+- `docs/API_ERP_V1_FRONTEND.md`
+- `docs/openapi/erp-v1.yaml`
+- `docs/postman/ERP-v1.postman_collection.json`
+
+Reglas freeze:
+1. JSON PascalCase SYSCOOP.
+2. Contrato uniforme: `Ok`, `Mensaje`, `Datos`, `Errores`, `Meta`.
+3. Timezone oficial: `America/La_Paz` en ISO 8601.
+4. `TamanoPagina > 200` responde `422`.
+5. Moneda MVP: solo `BOB` (ISO 4217).
+6. Idempotencia en POST sensibles con `Clave-Idempotencia`.
+7. Replay headers:
+   - `X-Repeticion-Idempotencia: si`
+   - `X-Idempotent-Replay: true`
+8. Feature flag rollout:
+   - `ERP_V1_HABILITADO=true|false`
+   - si `false`, ERP v1 responde `503` y legacy se mantiene.

@@ -33,9 +33,8 @@ class ArchivoStorageService
         $tcNombre = $this->generarNombreArchivo($tcDominio, $tcEntidad, $tnEntidad, $tcExtension);
         $tcPrefijo = $this->generarPrefijo($tcDominio, $tnEmpresa, $tcEntidad, $tnEntidad);
 
-        Storage::disk($this->pcDiscoNube)->putFileAs($tcPrefijo, $toArchivo, $tcNombre, [
-            'visibility' => 'public',
-        ]);
+        // Bucket S3 con ACL deshabilitada: no enviar visibility/ACL.
+        Storage::disk($this->pcDiscoNube)->putFileAs($tcPrefijo, $toArchivo, $tcNombre);
 
         $tcRutaObjeto = $tcPrefijo . '/' . $tcNombre;
 
@@ -55,8 +54,8 @@ class ArchivoStorageService
         $tcPrefijo = $this->generarPrefijo($tcDominio, $tnEmpresa, $tcEntidad, $tnEntidad);
         $tcRutaObjeto = $tcPrefijo . '/' . $tcNombre;
 
+        // Bucket S3 con ACL deshabilitada: no enviar visibility/ACL.
         Storage::disk($this->pcDiscoNube)->put($tcRutaObjeto, $tcContenido, [
-            'visibility' => 'public',
             'ContentType' => $tcMime,
         ]);
 

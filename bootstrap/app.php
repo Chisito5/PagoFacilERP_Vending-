@@ -31,6 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'idempotencia.requerida' => \App\Http\Middleware\RequiereClaveIdempotencia::class,
+            'erp.v1.habilitado' => \App\Http\Middleware\BloquearErpV1Deshabilitado::class,
+            'api.correlacion' => \App\Http\Middleware\CorrelacionApiMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

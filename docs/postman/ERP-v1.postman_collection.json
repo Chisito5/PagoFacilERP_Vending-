@@ -1,0 +1,61 @@
+{
+  "info": {
+    "name": "ERP v1",
+    "_postman_id": "9c74d8be-b269-4be1-8f2d-b5a8d6f2fd10",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"Usuario\": \"Vladimir\",\n  \"Clave\": \"Asadito7\"\n}" },
+        "url": { "raw": "{{base_url}}/api/erp/v1/auth/login", "host": ["{{base_url}}"], "path": ["api", "erp", "v1", "auth", "login"] }
+      }
+    },
+    {
+      "name": "Ventas Listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{base_url}}/api/erp/v1/venta?Pagina=1&TamanoPagina=20", "host": ["{{base_url}}"], "path": ["api", "erp", "v1", "venta"], "query": [{ "key": "Pagina", "value": "1" }, { "key": "TamanoPagina", "value": "20" }] }
+      }
+    },
+    {
+      "name": "Venta Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "erp-v1-venta-{{$guid}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"Maquina\": 1,\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 1,\n  \"Moneda\": \"BOB\"\n}" },
+        "url": { "raw": "{{base_url}}/api/erp/v1/venta", "host": ["{{base_url}}"], "path": ["api", "erp", "v1", "venta"] }
+      }
+    },
+    {
+      "name": "Venta Historial",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{base_url}}/api/erp/v1/venta/{{id_venta}}/historial?Pagina=1&TamanoPagina=20", "host": ["{{base_url}}"], "path": ["api", "erp", "v1", "venta", "{{id_venta}}", "historial"], "query": [{ "key": "Pagina", "value": "1" }, { "key": "TamanoPagina", "value": "20" }] }
+      }
+    },
+    {
+      "name": "Transacciones Listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{base_url}}/api/erp/v1/transacciones?Pagina=1&TamanoPagina=20", "host": ["{{base_url}}"], "path": ["api", "erp", "v1", "transacciones"], "query": [{ "key": "Pagina", "value": "1" }, { "key": "TamanoPagina", "value": "20" }] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "token", "value": "" },
+    { "key": "id_venta", "value": "1" }
+  ]
+}
+

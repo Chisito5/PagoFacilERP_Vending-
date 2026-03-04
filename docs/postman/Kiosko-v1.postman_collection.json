@@ -1,0 +1,131 @@
+{
+  "info": {
+    "name": "Kiosko v1",
+    "_postman_id": "c0fe7e4a-f3c3-4f79-954d-bfaaf0ad4f6e",
+    "description": "Coleccion para API Kiosko v1 (catalogo + venta/reserva/reversa).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Catalogo Maquina",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/maquina/{{maquina}}/catalogo",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "maquina", "{{maquina}}", "catalogo"]
+        }
+      }
+    },
+    {
+      "name": "Venta Directa",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "kiosko-venta-{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Maquina\": {{maquina}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 1\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/venta",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "venta"]
+        }
+      }
+    },
+    {
+      "name": "Reversa Venta",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "kiosko-reversa-{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Venta\": {{venta}},\n  \"Motivo\": \"vending_backend_failed\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/venta/reversa",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "venta", "reversa"]
+        }
+      }
+    },
+    {
+      "name": "Crear Reserva",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "kiosko-reserva-{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Maquina\": {{maquina}},\n  \"CodigoSeleccion\": \"A1\",\n  \"Cantidad\": 1,\n  \"ExpiraSegundos\": 120\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/reserva",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "reserva"]
+        }
+      }
+    },
+    {
+      "name": "Confirmar Reserva",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "kiosko-confirmar-{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Reserva\": {{reserva}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/reserva/confirmar",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "reserva", "confirmar"]
+        }
+      }
+    },
+    {
+      "name": "Cancelar Reserva",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Clave-Idempotencia", "value": "kiosko-cancelar-{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"Reserva\": {{reserva}},\n  \"Motivo\": \"Usuario cancelo\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/kiosko/v1/reserva/cancelar",
+          "host": ["{{base_url}}"],
+          "path": ["api", "kiosko", "v1", "reserva", "cancelar"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "token", "value": "" },
+    { "key": "maquina", "value": "1" },
+    { "key": "venta", "value": "1" },
+    { "key": "reserva", "value": "1" }
+  ]
+}

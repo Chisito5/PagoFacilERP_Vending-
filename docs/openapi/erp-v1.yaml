@@ -1,0 +1,237 @@
+openapi: 3.0.3
+info:
+  title: ERP API v1
+  version: 1.0.0
+  description: Contrato oficial para frontend ERP.
+servers:
+  - url: /api/erp/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ErrorItem:
+      type: object
+      properties:
+        Codigo:
+          type: string
+        Campo:
+          type: string
+          nullable: true
+        Detalle:
+          type: string
+    MetaPaginacion:
+      type: object
+      properties:
+        PaginaActual:
+          type: integer
+        TamanoPagina:
+          type: integer
+        TotalRegistros:
+          type: integer
+        TotalPaginas:
+          type: integer
+    RespuestaExito:
+      type: object
+      properties:
+        Ok:
+          type: boolean
+        Mensaje:
+          type: string
+        Datos:
+          type: object
+        Errores:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+        Meta:
+          type: object
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [Usuario, Clave]
+              properties:
+                Usuario: { type: string }
+                Clave: { type: string }
+      responses:
+        '200':
+          description: OK
+  /auth/perfil:
+    get:
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /venta:
+    get:
+      tags: [Venta]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: Pagina
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: TamanoPagina
+          schema: { type: integer, default: 20, maximum: 200 }
+        - in: query
+          name: Busqueda
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+        '422':
+          description: Validación
+    post:
+      tags: [Venta]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Clave-Idempotencia
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [Maquina, CodigoSeleccion, Cantidad]
+              properties:
+                Maquina: { type: integer }
+                CodigoSeleccion: { type: string }
+                Cantidad: { type: integer }
+                Moneda:
+                  type: string
+                  enum: [BOB]
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Idempotencia/conflicto
+  /venta/{IdVenta}:
+    get:
+      tags: [Venta]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: IdVenta
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: No encontrado
+  /venta/{IdVenta}/historial:
+    get:
+      tags: [Venta]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: IdVenta
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: Pagina
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: TamanoPagina
+          schema: { type: integer, default: 20, maximum: 200 }
+      responses:
+        '200':
+          description: OK
+  /transacciones:
+    get:
+      tags: [Transacciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /transacciones/{IdTransaccion}:
+    get:
+      tags: [Transacciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: IdTransaccion
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: No encontrado
+  /tablero/ejecutivo/unificado:
+    get:
+      tags: [Tablero]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /analitica/resumen:
+    get:
+      tags: [Analitica]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /catalogo/maquina:
+    get:
+      tags: [Catalogo]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /catalogo/producto:
+    get:
+      tags: [Catalogo]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /catalogo/oferta:
+    get:
+      tags: [Catalogo]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /catalogo/metodo-pago:
+    get:
+      tags: [Catalogo]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /catalogo/estado-transaccion:
+    get:
+      tags: [Catalogo]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+

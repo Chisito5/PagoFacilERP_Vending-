@@ -456,6 +456,20 @@ class MaquinaService
                     'UsrHora' => $tdAhora->format('H:i:s'),
                 ]);
 
+            // Elimina archivo fisico si ya no existe otra foto activa usando la misma ruta.
+            $tcRutaImagen = trim((string)($loFoto->RutaImagen ?? ''));
+            if ($tcRutaImagen !== '') {
+                $tnReferenciasActivas = (int)DB::connection($this->pcConexion)
+                    ->table('MAQUINAIMAGEN')
+                    ->where('RutaImagen', $tcRutaImagen)
+                    ->where('Estado', $tnEstadoActivo)
+                    ->count();
+
+                if ($tnReferenciasActivas === 0) {
+                    $this->toArchivoStorage->eliminar($tcRutaImagen);
+                }
+            }
+
             $loNuevo = DB::connection($this->pcConexion)
                 ->table('MAQUINAIMAGEN')
                 ->where('MaquinaImagen', $tnMaquinaImagen)
